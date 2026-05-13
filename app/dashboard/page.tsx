@@ -1,99 +1,688 @@
 "use client";
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { formateraDatum } from "@/lib/datum";
+
+type RumInfo = {
+  id: string;
+  namn: string;
+  manadshyra: number;
+  bostad: { id: string; namn: string; stadsdel: string | null };
+};
 
 type Bokning = {
   id: string;
-  bostad_id: string;
-  namn: string;
+  kund_kontaktperson: string;
+  boende_namn: string | null;
   email: string;
-  inflyttning: string;
-  utflyttning: string;
+  startdatum: string;
+  slutdatum: string | null;
+  status: string;
+  avtalstyp: string;
   created_at: string;
-  bostader: {
-    city: string;
-    type: string;
-    price: number;
-  };
+  rum: RumInfo;
 };
 
-type User = {
+type BostadOption = {
   id: string;
-  email: string;
-  user_metadata: { namn: string; roll: string };
+  namn: string;
+  stadsdel: string | null;
+  adress: string | null;
 };
+
+type Session = { userId: string; email: string; namn: string; roll: string } | null;
+
+type Flik = "bokningar" | "laggUppBostad" | "laggUppRum";
+
+const INPUT_CLS =
+  "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors";
+
+const LABEL_CLS =
+  "text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2";
+
+function parseList(s: string): string[] {
+  return s
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+}
+
+// ─── Bilduppladdning ─────────────────────────────────────────────────────────
+
+type UploadItem = {
+  id: number;
+  file: File;
+  url: string | null;
+  uploading: boolean;
+  error: string | null;
+};
+
+function BildUppladdning({
+  onBilderChange,
+  disabled,
+}: {
+  onBilderChange: (urls: string[]) => void;
+  disabled: boolean;
+}) {
+  const [items, setItems] = useState<UploadItem[]>([]);
+  const nextId = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synca parent efter varje render där items förändras (korrekt React-mönster)
+  useEffect(() => {
+    onBilderChange(items.filter((i) => i.url).map((i) => i.url!));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  async function handleFiles(files: FileList) {
+    const newItems: UploadItem[] = Array.from(files).map((file) => ({
+      id: nextId.current++,
+      file,
+      url: null,
+      uploading: true,
+      error: null,
+    }));
+
+    setItems((prev) => [...prev, ...newItems]);
+
+    for (const item of newItems) {
+      const formData = new FormData();
+      formData.append("file", item.file);
+
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        setItems((prev) =>
+          prev.map((i) =>
+            i.id === item.id
+              ? { ...i, url: res.ok ? data.url : null, uploading: false, error: res.ok ? null : (data.error ?? "Fel") }
+              : i
+          )
+        );
+      } catch {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.id === item.id ? { ...i, uploading: false, error: "Uppladdning misslyckades" } : i
+          )
+        );
+      }
+    }
+  }
+
+  function taBort(id: number) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  const uploading = items.some((i) => i.uploading);
+
+  return (
+    <div>
+      <label className={LABEL_CLS}>Bilder</label>
+      <div
+        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors mb-4 ${
+          disabled ? "border-gray-100 cursor-default" : "border-gray-200 hover:border-[#2D7A4F] cursor-pointer"
+        }`}
+        onClick={() => !disabled && fileInputRef.current?.click()}
+      >
+        {uploading ? (
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-4 h-4 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-[#2D7A4F]">Laddar upp bilder...</span>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-400">Klicka för att välja bilder</p>
+            <p className="text-xs text-gray-300 mt-1">jpg, png, webp · max 5 MB per bild</p>
+          </>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          disabled={disabled}
+          onChange={(e) => {
+            if (e.target.files) handleFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-4">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0"
+            >
+              {item.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.url} alt="" className="w-full h-full object-cover" />
+              ) : item.uploading ? (
+                <div className="w-5 h-5 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="text-red-400 text-xs text-center px-1 leading-tight">{item.error ?? "Fel"}</span>
+              )}
+              {!item.uploading && (
+                <button
+                  type="button"
+                  onClick={() => taBort(item.id)}
+                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors leading-none"
+                  aria-label="Ta bort bild"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Flik: Mina bokningar ────────────────────────────────────────────────────
+
+function MinaBokningar({ bokningar }: { bokningar: Bokning[] }) {
+  if (bokningar.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <p className="text-4xl mb-4">🏠</p>
+        <p className="text-gray-400 text-sm">Du har inga bokningar ännu.</p>
+        <a
+          href="/bostader"
+          className="inline-block mt-4 bg-[#2D7A4F] text-white text-sm px-6 py-2.5 rounded-full hover:bg-[#225f3d] transition-colors"
+        >
+          Hitta ett rum
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {bokningar.map((b) => (
+        <div
+          key={b.id}
+          className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col md:flex-row justify-between gap-4"
+        >
+          <div className="flex gap-4 items-start">
+            <div className="w-12 h-12 bg-[#e8f5ee] rounded-xl flex items-center justify-center text-xl shrink-0">
+              🛏
+            </div>
+            <div>
+              <h3 className="font-semibold text-[#1a1a1a]">{b.rum?.namn}</h3>
+              <p className="text-sm text-gray-400">{b.rum?.bostad?.namn}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Från {formateraDatum(b.startdatum)}
+                {b.slutdatum ? ` → ${formateraDatum(b.slutdatum)}` : " (tills vidare)"}
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0 flex flex-col items-end gap-2">
+            <p className="text-[#2D7A4F] font-bold">
+              {b.rum?.manadshyra?.toLocaleString()} kr/mån
+            </p>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <span
+                className={`inline-block text-xs px-3 py-1 rounded-full ${
+                  b.status === "bekraftad"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-[#e8f5ee] text-[#2D7A4F]"
+                }`}
+              >
+                {b.status === "bekraftad" ? "Bekräftad" : "Förfrågan skickad"}
+              </span>
+              <span className="inline-block text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
+                {b.avtalstyp === "standard" ? "Standard" : b.avtalstyp === "premium" ? "Premium" : "Medlemskap"}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Flik: Lägg upp bostad ───────────────────────────────────────────────────
+
+function LaggUppBostad() {
+  const [namn, setNamn] = useState("");
+  const [adress, setAdress] = useState("");
+  const [stadsdel, setStadsdel] = useState("");
+  const [beskrivning, setBeskrivning] = useState("");
+  const [deladeUtrymmen, setDeladeUtrymmen] = useState("");
+  const [inkluderat, setInkluderat] = useState("");
+  const [bildUrls, setBildUrls] = useState<string[]>([]);
+  const [kontaktNamn, setKontaktNamn] = useState("");
+  const [kontaktEmail, setKontaktEmail] = useState("");
+  const [kontaktTelefon, setKontaktTelefon] = useState("");
+  const [kontaktBildUrls, setKontaktBildUrls] = useState<string[]>([]);
+  const [sparad, setSparad] = useState(false);
+  const [laddar, setLaddar] = useState(false);
+  const [fel, setFel] = useState("");
+
+  async function handleSubmit() {
+    if (!namn) return;
+    setLaddar(true);
+    setFel("");
+
+    const res = await fetch("/api/bostader", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        namn,
+        adress: adress || null,
+        stadsdel: stadsdel || null,
+        beskrivning: beskrivning || null,
+        bilder: bildUrls,
+        delade_utrymmen: parseList(deladeUtrymmen),
+        inkluderat: parseList(inkluderat),
+        kontaktperson_namn: kontaktNamn || null,
+        kontaktperson_email: kontaktEmail || null,
+        kontaktperson_telefon: kontaktTelefon || null,
+        kontaktperson_bild: kontaktBildUrls[0] ?? null,
+      }),
+    });
+
+    if (res.ok) {
+      setSparad(true);
+      setNamn("");
+      setAdress("");
+      setStadsdel("");
+      setBeskrivning("");
+      setDeladeUtrymmen("");
+      setInkluderat("");
+      setBildUrls([]);
+      setKontaktNamn("");
+      setKontaktEmail("");
+      setKontaktTelefon("");
+      setKontaktBildUrls([]);
+      setTimeout(() => setSparad(false), 5000);
+    } else {
+      const data = await res.json();
+      setFel(data.error ?? "Något gick fel.");
+    }
+    setLaddar(false);
+  }
+
+  const submitDisabled = !namn || laddar;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-8">
+      <h2 className="font-semibold text-[#1a1a1a] mb-1">Lägg upp en ny bostad</h2>
+      <p className="text-sm text-gray-400 mb-6">
+        Skapa bostaden här, lägg sedan till rum under fliken "Lägg upp rum".
+      </p>
+
+      {sparad && (
+        <div className="bg-[#e8f5ee] text-[#2D7A4F] text-sm px-4 py-3 rounded-xl mb-6">
+          ✓ Bostaden har lagts upp! Gå till fliken{" "}
+          <span className="underline font-medium">Lägg upp rum</span>{" "}
+          för att lägga till rum.
+        </div>
+      )}
+
+      {fel && (
+        <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-xl mb-6">
+          {fel}
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div>
+          <label className={LABEL_CLS}>
+            Bostadens namn <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="t.ex. Hagagatan 12"
+            value={namn}
+            onChange={(e) => setNamn(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Stadsdel</label>
+          <input
+            type="text"
+            placeholder="t.ex. Södermalm"
+            value={stadsdel}
+            onChange={(e) => setStadsdel(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className={LABEL_CLS}>Adress</label>
+          <input
+            type="text"
+            placeholder="t.ex. Hagagatan 12, 113 47 Stockholm"
+            value={adress}
+            onChange={(e) => setAdress(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+
+      <div className="mb-5">
+        <label className={LABEL_CLS}>Beskrivning</label>
+        <textarea
+          placeholder="Beskriv bostaden och dess omgivning..."
+          value={beskrivning}
+          onChange={(e) => setBeskrivning(e.target.value)}
+          rows={3}
+          className={`${INPUT_CLS} resize-none`}
+        />
+      </div>
+
+      <div className="mb-5">
+        <label className={LABEL_CLS}>
+          Delade utrymmen{" "}
+          <span className="normal-case font-normal">(separera med komma)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="t.ex. Gemensamt kök, Vardagsrum, Badrum"
+          value={deladeUtrymmen}
+          onChange={(e) => setDeladeUtrymmen(e.target.value)}
+          className={INPUT_CLS}
+        />
+      </div>
+
+      <div className="mb-5">
+        <label className={LABEL_CLS}>
+          Vad ingår{" "}
+          <span className="normal-case font-normal">(separera med komma)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="t.ex. El, Vatten, Bredband, TV-avgift"
+          value={inkluderat}
+          onChange={(e) => setInkluderat(e.target.value)}
+          className={INPUT_CLS}
+        />
+      </div>
+
+      <div className="mb-8">
+        <BildUppladdning
+          onBilderChange={setBildUrls}
+          disabled={laddar}
+        />
+      </div>
+
+      {/* KONTAKTPERSON */}
+      <div className="border-t border-gray-100 pt-6 mb-8">
+        <h3 className="font-semibold text-[#1a1a1a] mb-1 text-sm">Kontaktperson</h3>
+        <p className="text-xs text-gray-400 mb-5">Visas för hyresgäster på rumssidan (valfritt)</p>
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
+          <div>
+            <label className={LABEL_CLS}>Namn</label>
+            <input type="text" placeholder="Anna Svensson" value={kontaktNamn}
+              onChange={(e) => setKontaktNamn(e.target.value)} className={INPUT_CLS} />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Telefon</label>
+            <input type="tel" placeholder="070-000 00 00" value={kontaktTelefon}
+              onChange={(e) => setKontaktTelefon(e.target.value)} className={INPUT_CLS} />
+          </div>
+          <div className="md:col-span-2">
+            <label className={LABEL_CLS}>E-post</label>
+            <input type="email" placeholder="anna@exempel.se" value={kontaktEmail}
+              onChange={(e) => setKontaktEmail(e.target.value)} className={INPUT_CLS} />
+          </div>
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Profilbild <span className="normal-case font-normal">(valfritt)</span></label>
+          <BildUppladdning onBilderChange={setKontaktBildUrls} disabled={laddar} />
+        </div>
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={submitDisabled}
+        className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+      >
+        {laddar ? "Sparar..." : "Lägg upp bostad"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Flik: Lägg upp rum ──────────────────────────────────────────────────────
+
+function LaggUppRum() {
+  const [bostader, setBostader] = useState<BostadOption[]>([]);
+  const [hamtarBostader, setHamtarBostader] = useState(true);
+  const [bostadId, setBostadId] = useState("");
+  const [namn, setNamn] = useState("");
+  const [beskrivning, setBeskrivning] = useState("");
+  const [kvm, setKvm] = useState("");
+  const [manadshyra, setManadshyra] = useState("");
+  const [moblering, setMoblering] = useState("");
+  const [bildUrls, setBildUrls] = useState<string[]>([]);
+  const [sparad, setSparad] = useState(false);
+  const [laddar, setLaddar] = useState(false);
+  const [fel, setFel] = useState("");
+
+  useEffect(() => {
+    fetch("/api/bostader")
+      .then((r) => r.json())
+      .then((data) => {
+        setBostader(Array.isArray(data) ? data : []);
+        setHamtarBostader(false);
+      })
+      .catch(() => setHamtarBostader(false));
+  }, []);
+
+  async function handleSubmit() {
+    if (!bostadId || !namn || !manadshyra) return;
+    setLaddar(true);
+    setFel("");
+
+    const res = await fetch("/api/rum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bostad_id: bostadId,
+        namn,
+        beskrivning: beskrivning || null,
+        kvm: kvm ? Number(kvm) : null,
+        manadshyra: Number(manadshyra),
+        bilder: bildUrls,
+        moblering: parseList(moblering),
+      }),
+    });
+
+    if (res.ok) {
+      setSparad(true);
+      setNamn("");
+      setBeskrivning("");
+      setKvm("");
+      setManadshyra("");
+      setMoblering("");
+      setBildUrls([]);
+      setTimeout(() => setSparad(false), 5000);
+    } else {
+      const data = await res.json();
+      setFel(data.error ?? "Något gick fel.");
+    }
+    setLaddar(false);
+  }
+
+  const valdBostad = bostader.find((b) => b.id === bostadId);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-8">
+      <h2 className="font-semibold text-[#1a1a1a] mb-1">Lägg till ett rum</h2>
+      <p className="text-sm text-gray-400 mb-6">
+        Välj vilken bostad rummet tillhör och fyll i rumsuppgifterna.
+      </p>
+
+      {sparad && (
+        <div className="bg-[#e8f5ee] text-[#2D7A4F] text-sm px-4 py-3 rounded-xl mb-6">
+          ✓ Rummet har lagts till!{" "}
+          {valdBostad && (
+            <Link href={`/bostad/${valdBostad.id}`} className="underline font-medium">
+              Visa {valdBostad.namn} →
+            </Link>
+          )}
+        </div>
+      )}
+
+      {fel && (
+        <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-xl mb-6">
+          {fel}
+        </div>
+      )}
+
+      {/* VÄLJ BOSTAD */}
+      <div className="mb-6">
+        <label className={LABEL_CLS}>
+          Bostad <span className="text-red-400">*</span>
+        </label>
+        {hamtarBostader ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400 py-3">
+            <div className="w-4 h-4 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin" />
+            Hämtar bostäder...
+          </div>
+        ) : bostader.length === 0 ? (
+          <div className="bg-[#F8F7F4] rounded-xl px-4 py-3 text-sm text-gray-500">
+            Inga bostäder hittades. Lägg upp en bostad först under fliken{" "}
+            <span className="font-medium text-[#2D7A4F]">Lägg upp bostad</span>.
+          </div>
+        ) : (
+          <select
+            value={bostadId}
+            onChange={(e) => setBostadId(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
+          >
+            <option value="">— Välj bostad —</option>
+            {bostader.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.namn}
+                {b.stadsdel ? ` · ${b.stadsdel}` : ""}
+                {b.adress ? ` (${b.adress})` : ""}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* RUMSUPPGIFTER */}
+      <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div className="md:col-span-2">
+          <label className={LABEL_CLS}>
+            Rumsnamn <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="t.ex. Rum 1, Enkelrum norra, Mästarsvitten"
+            value={namn}
+            onChange={(e) => setNamn(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Storlek (kvm)</label>
+          <input
+            type="number"
+            min="1"
+            placeholder="t.ex. 12"
+            value={kvm}
+            onChange={(e) => setKvm(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>
+            Månadshyra (kr) <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="number"
+            min="0"
+            placeholder="t.ex. 8500"
+            value={manadshyra}
+            onChange={(e) => setManadshyra(e.target.value)}
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+
+      <div className="mb-5">
+        <label className={LABEL_CLS}>Beskrivning</label>
+        <textarea
+          placeholder="Beskriv rummet, läge i bostaden, ljusinsläpp..."
+          value={beskrivning}
+          onChange={(e) => setBeskrivning(e.target.value)}
+          rows={3}
+          className={`${INPUT_CLS} resize-none`}
+        />
+      </div>
+
+      <div className="mb-5">
+        <label className={LABEL_CLS}>
+          Möblering{" "}
+          <span className="normal-case font-normal">(separera med komma)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="t.ex. Säng 90cm, Skrivbord, Garderob, Stol"
+          value={moblering}
+          onChange={(e) => setMoblering(e.target.value)}
+          className={INPUT_CLS}
+        />
+      </div>
+
+      <div className="mb-8">
+        <BildUppladdning
+          onBilderChange={setBildUrls}
+          disabled={laddar}
+        />
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={!bostadId || !namn || !manadshyra || laddar}
+        className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+      >
+        {laddar ? "Sparar..." : "Lägg till rum"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Huvud-komponent ─────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session>(null);
   const [bokningar, setBokningar] = useState<Bokning[]>([]);
   const [laddar, setLaddar] = useState(true);
-  const [aktivFlik, setAktivFlik] = useState<"bokningar" | "laggUpp">("bokningar");
-
-  // Lägg upp bostad
-  const [city, setCity] = useState("");
-  const [type, setType] = useState("");
-  const [price, setPrice] = useState("");
-  const [size, setSize] = useState("");
-  const [beskrivning, setBeskrivning] = useState("");
-  const [facilities, setFacilities] = useState("");
-  const [sparad, setSparad] = useState(false);
-  const [spararLaddar, setSpararLaddar] = useState(false);
+  const [aktivFlik, setAktivFlik] = useState<Flik>("bokningar");
+  const router = useRouter();
 
   useEffect(() => {
     async function hamtaData() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData: Session = await sessionRes.json();
 
-      if (!user) {
-        window.location.href = "/logga-in";
+      if (!sessionData) {
+        router.push("/logga-in");
         return;
       }
 
-      setUser(user as unknown as User);
+      setSession(sessionData);
 
-      const { data } = await supabase
-        .from("bokningar")
-        .select("*, bostader(city, type, price)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      setBokningar(data || []);
+      const bokRes = await fetch("/api/bokningar");
+      if (bokRes.ok) {
+        const data = await bokRes.json();
+        setBokningar(Array.isArray(data) ? data : []);
+      }
       setLaddar(false);
     }
     hamtaData();
   }, []);
-
-  async function handleLaggUpp() {
-    if (!city || !type || !price || !size) return;
-    setSpararLaddar(true);
-
-    const facilitiesArray = facilities
-      .split(",")
-      .map((f) => f.trim())
-      .filter((f) => f.length > 0);
-
-    const { error } = await supabase.from("bostader").insert({
-      city,
-      type,
-      price: Number(price),
-      size: Number(size),
-      beskrivning,
-      facilities: facilitiesArray,
-      tag: "Ny",
-      owner_id: user?.id,
-    });
-
-    if (!error) {
-      setSparad(true);
-      setCity("");
-      setType("");
-      setPrice("");
-      setSize("");
-      setBeskrivning("");
-      setFacilities("");
-      setTimeout(() => setSparad(false), 3000);
-    }
-    setSpararLaddar(false);
-  }
 
   if (laddar) {
     return (
@@ -106,163 +695,47 @@ export default function Dashboard() {
     );
   }
 
+  const flikar: { key: Flik; label: string }[] = [
+    { key: "bokningar", label: "Mina bokningar" },
+    { key: "laggUppBostad", label: "Lägg upp bostad" },
+    { key: "laggUppRum", label: "Lägg upp rum" },
+  ];
+
   return (
     <main className="min-h-screen bg-[#F8F7F4]">
-
       <div className="max-w-5xl mx-auto px-8 py-12">
 
-        <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2">Min dashboard</h1>
+        <div className="flex items-start justify-between mb-2">
+          <h1 className="text-3xl font-bold text-[#1a1a1a]">Min dashboard</h1>
+          {session && (
+            <span className="text-sm text-gray-400 mt-1.5">
+              Inloggad som{" "}
+              <span className="text-[#1a1a1a] font-medium">{session.namn}</span>
+            </span>
+          )}
+        </div>
         <p className="text-gray-400 mb-10">Hantera dina bokningar och bostäder</p>
 
         {/* FLIKAR */}
-        <div className="flex gap-2 bg-white p-1 rounded-xl border border-gray-100 w-fit mb-8">
-          <button
-            onClick={() => setAktivFlik("bokningar")}
-            className={`text-sm px-6 py-2.5 rounded-lg font-medium transition-colors ${
-              aktivFlik === "bokningar"
-                ? "bg-[#2D7A4F] text-white"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            Mina bokningar
-          </button>
-          <button
-            onClick={() => setAktivFlik("laggUpp")}
-            className={`text-sm px-6 py-2.5 rounded-lg font-medium transition-colors ${
-              aktivFlik === "laggUpp"
-                ? "bg-[#2D7A4F] text-white"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            Lägg upp bostad
-          </button>
+        <div className="flex flex-wrap gap-2 bg-white p-1 rounded-xl border border-gray-100 w-fit mb-8">
+          {flikar.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setAktivFlik(key)}
+              className={`text-sm px-5 py-2.5 rounded-lg font-medium transition-colors ${
+                aktivFlik === key
+                  ? "bg-[#2D7A4F] text-white"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* BOKNINGAR */}
-        {aktivFlik === "bokningar" && (
-          <div>
-            {bokningar.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                <p className="text-4xl mb-4">🏠</p>
-                <p className="text-gray-400 text-sm">Du har inga bokningar ännu.</p>
-                <a href="/bostader" className="inline-block mt-4 bg-[#2D7A4F] text-white text-sm px-6 py-2.5 rounded-full hover:bg-[#225f3d] transition-colors">
-                  Hitta en bostad
-                </a>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {bokningar.map((b) => (
-                  <div key={b.id} className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex gap-4 items-start">
-                      <div className="w-12 h-12 bg-[#e8f5ee] rounded-xl flex items-center justify-center text-xl">🏠</div>
-                      <div>
-                        <h3 className="font-semibold text-[#1a1a1a]">{b.bostader?.city}</h3>
-                        <p className="text-sm text-gray-400">{b.bostader?.type}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {b.inflyttning} → {b.utflyttning}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[#2D7A4F] font-bold">{b.bostader?.price.toLocaleString()} kr/mån</p>
-                      <span className="inline-block text-xs bg-[#e8f5ee] text-[#2D7A4F] px-3 py-1 rounded-full mt-2">
-                        Förfrågan skickad
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* LÄGG UPP BOSTAD */}
-        {aktivFlik === "laggUpp" && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-8">
-            <h2 className="font-semibold text-[#1a1a1a] mb-6">Lägg upp en ny bostad</h2>
-
-            {sparad && (
-              <div className="bg-[#e8f5ee] text-[#2D7A4F] text-sm px-4 py-3 rounded-xl mb-6">
-                ✓ Bostaden har lagts upp och syns nu i listan!
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-5 mb-5">
-              <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Stad</label>
-                <input
-                  type="text"
-                  placeholder="t.ex. Stockholm"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Typ</label>
-                <input
-                  type="text"
-                  placeholder="t.ex. 2 rum & kök"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Pris (kr/mån)</label>
-                <input
-                  type="number"
-                  placeholder="t.ex. 15000"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Storlek (m²)</label>
-                <input
-                  type="number"
-                  placeholder="t.ex. 55"
-                  value={size}
-                  onChange={(e) => setSize(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="mb-5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Beskrivning</label>
-              <textarea
-                placeholder="Beskriv bostaden..."
-                value={beskrivning}
-                onChange={(e) => setBeskrivning(e.target.value)}
-                rows={3}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors resize-none"
-              />
-            </div>
-
-            <div className="mb-8">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-                Faciliteter <span className="normal-case font-normal">(separera med komma)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="t.ex. WiFi, Parkering, Balkong"
-                value={facilities}
-                onChange={(e) => setFacilities(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-              />
-            </div>
-
-            <button
-              onClick={handleLaggUpp}
-              disabled={!city || !type || !price || !size || spararLaddar}
-              className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
-            >
-              {spararLaddar ? "Sparar..." : "Lägg upp bostad"}
-            </button>
-          </div>
-        )}
+        {aktivFlik === "bokningar" && <MinaBokningar bokningar={bokningar} />}
+        {aktivFlik === "laggUppBostad" && <LaggUppBostad />}
+        {aktivFlik === "laggUppRum" && <LaggUppRum />}
       </div>
     </main>
   );

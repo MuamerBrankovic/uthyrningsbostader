@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -97,7 +98,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-[#1a1a1a]">Utvalda bostäder</h2>
             <p className="text-gray-400 mt-1">Populära val just nu</p>
           </div>
-          <a href="/bostader" className="text-sm text-[#2D7A4F] font-medium hover:underline">Visa alla →</a>
+          <Link href="/bostader" className="text-sm text-[#2D7A4F] font-medium hover:underline">Visa alla →</Link>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
@@ -132,8 +133,8 @@ export default function Home() {
           <div className="flex gap-16 text-sm">
             <div className="flex flex-col gap-2">
               <span className="text-white font-medium mb-1">Tjänster</span>
-              <a href="/bostader" className="hover:text-white transition-colors">Hitta bostad</a>
-              <a href="/dashboard" className="hover:text-white transition-colors">Hyra ut</a>
+              <Link href="/bostader" className="hover:text-white transition-colors">Hitta bostad</Link>
+              <Link href="/dashboard" className="hover:text-white transition-colors">Hyra ut</Link>
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-white font-medium mb-1">Företaget</span>

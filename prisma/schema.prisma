@@ -1,0 +1,67 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Bostad {
+  id                   String   @id @default(uuid())
+  namn                 String
+  adress               String?
+  stadsdel             String?
+  beskrivning          String?
+  bilder               String[]
+  delade_utrymmen      String[]
+  inkluderat           String[]
+  narmaste_hallplats   String?
+  kontaktperson_namn   String?
+  kontaktperson_bild   String?
+  kontaktperson_email  String?
+  kontaktperson_telefon String?
+  rum                  Rum[]
+  created_at           DateTime @default(now())
+}
+
+model Rum {
+  id          String     @id @default(uuid())
+  bostad_id   String
+  bostad      Bostad     @relation(fields: [bostad_id], references: [id], onDelete: Cascade)
+  namn        String
+  beskrivning String?
+  bilder      String[]
+  kvm         Int?
+  manadshyra  Int
+  moblering   String[]
+  status      String     @default("ledig")
+  bokningar   Bokning[]
+  created_at  DateTime   @default(now())
+}
+
+model Bokning {
+  id                 String   @id @default(uuid())
+  rum_id             String
+  rum                Rum      @relation(fields: [rum_id], references: [id], onDelete: Cascade)
+  kund_foretag       String?
+  kund_orgnr         String?
+  kund_kontaktperson String
+  boende_namn        String?
+  email              String
+  telefon            String?
+  startdatum         DateTime
+  slutdatum          DateTime?
+  status             String   @default("forfragan")
+  avtalstyp          String   @default("standard")
+  created_at         DateTime @default(now())
+}
+
+model Anvandare {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  losenord     String
+  namn         String
+  roll         String   @default("hyresgast")
+  created_at   DateTime @default(now())
+}

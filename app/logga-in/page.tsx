@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoggaIn() {
   const [email, setEmail] = useState("");
@@ -8,21 +9,25 @@ export default function LoggaIn() {
   const [laddar, setLaddar] = useState(false);
   const [inloggad, setInloggad] = useState(false);
   const [fel, setFel] = useState("");
+  const router = useRouter();
 
   async function handleLoggaIn() {
     if (!email || !losenord) return;
     setLaddar(true);
     setFel("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: losenord,
+    const res = await fetch("/api/auth/logga-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, losenord }),
     });
 
-    if (error) {
-      setFel("Fel e-post eller lösenord. Försök igen.");
-    } else {
+    if (res.ok) {
       setInloggad(true);
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setFel(data.error ?? "Fel e-post eller lösenord. Försök igen.");
     }
     setLaddar(false);
   }
@@ -34,9 +39,9 @@ export default function LoggaIn() {
           <div className="w-16 h-16 bg-[#e8f5ee] rounded-full flex items-center justify-center text-2xl mx-auto mb-4">✓</div>
           <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Välkommen tillbaka!</h2>
           <p className="text-gray-400 text-sm mb-6">Du är nu inloggad.</p>
-          <a href="/" className="bg-[#2D7A4F] text-white text-sm px-8 py-3 rounded-full hover:bg-[#225f3d] transition-colors">
+          <Link href="/" className="bg-[#2D7A4F] text-white text-sm px-8 py-3 rounded-full hover:bg-[#225f3d] transition-colors">
             Gå till startsidan
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -47,9 +52,9 @@ export default function LoggaIn() {
       <div className="w-full max-w-md">
 
         <div className="text-center mb-10">
-          <a href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
+          <Link href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
             Uthyrnings<span className="text-[#2D7A4F]">Bostäder</span>
-          </a>
+          </Link>
           <p className="text-gray-400 text-sm mt-2">Logga in på ditt konto</p>
         </div>
 
@@ -100,23 +105,13 @@ export default function LoggaIn() {
             {laddar ? "Loggar in..." : "Logga in"}
           </button>
 
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gray-100" />
-            <span className="text-xs text-gray-400">eller</span>
-            <div className="flex-1 h-px bg-gray-100" />
-          </div>
-
-          <button className="w-full border border-gray-200 text-gray-600 text-sm py-3.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-            <span>🔵</span> Fortsätt med Google
-          </button>
-
         </div>
 
         <p className="text-center text-sm text-gray-400 mt-6">
           Inget konto?{" "}
-          <a href="/registrera" className="text-[#2D7A4F] font-medium hover:underline">
+          <Link href="/registrera" className="text-[#2D7A4F] font-medium hover:underline">
             Registrera dig här
-          </a>
+          </Link>
         </p>
 
       </div>

@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UthyrningsBostäder — Home for Us
 
-## Getting Started
+Plattform för uthyrning av rum i kollektivboenden. Kopplar ihop uthyrare och hyresgäster med möblerade bostäder i hela Sverige.
 
-First, run the development server:
+## Tech stack
+
+- **Next.js 16** (App Router)
+- **React 19**
+- **Prisma 7** + **Neon PostgreSQL**
+- **Tailwind CSS 4**
+- **JWT-autentisering** via `jose` + `bcryptjs`
+- **Bilduppladdning** via Vercel Blob (med lokal fallback under utveckling)
+
+## Kom igång lokalt
 
 ```bash
+# 1. Installera beroenden
+npm install
+
+# 2. Skapa .env.local med miljövariabler (se nedan)
+
+# 3. Generera Prisma-klient
+npx prisma generate
+
+# 4. Kör migrationer mot databasen
+npx prisma migrate deploy
+
+# 5. Starta dev-server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Öppna [http://localhost:3000](http://localhost:3000) i webbläsaren.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Miljövariabler
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Skapa en fil `.env.local` i projektroten med följande variabler:
 
-## Learn More
+```env
+# PostgreSQL-anslutning (från Neon eller annan PostgreSQL-provider)
+DATABASE_URL="postgresql://..."
 
-To learn more about Next.js, take a look at the following resources:
+# Hemlig nyckel för JWT-tokens — måste vara lång och slumpmässig i produktion
+JWT_SECRET="din-hemliga-nyckel-minst-32-tecken"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Valfritt: Vercel Blob-token för bilduppladdning i produktion
+# Lämna tom för att använda lokal fallback (/public/uploads/) under utveckling
+BLOB_READ_WRITE_TOKEN=""
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Generera ett starkt JWT_SECRET
 
-## Deploy on Vercel
+Kör i terminalen:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Bygga för produktion
+
+```bash
+npm run build   # kör prisma generate + next build automatiskt
+npm start
+```
+
+## Bilduppladdning
+
+- **Lokalt**: Bilder sparas i `/public/uploads/` (ignoreras av git)
+- **Produktion (Vercel)**: Bilder laddas upp till Vercel Blob när `BLOB_READ_WRITE_TOKEN` är satt
+
+## Projektstruktur
+
+```
+app/
+  api/          API-routes (auth, bostäder, rum, bokningar, upload)
+  components/   Delade komponenter (Navbar, Bildgalleri)
+  bostad/[id]/  Bostadssida med bildgalleri
+  bostader/     Bostadslistan med filter
+  rum/[id]/     Rumssida med bokningsformulär och kontaktperson
+  dashboard/    Inloggad vy (lägg upp bostad/rum, mina bokningar)
+  logga-in/
+  registrera/
+lib/
+  auth.ts       JWT-sessionshantering
+  prisma.ts     Prisma-klient (singleton)
+  datum.ts      Datumformatering
+prisma/
+  schema.prisma Databasschema (Bostad, Rum, Bokning, Anvandare)
+  migrations/   Migreringshistorik
+```

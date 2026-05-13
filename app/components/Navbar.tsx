@@ -2,29 +2,30 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+
+type Session = { userId: string; email: string; namn: string; roll: string } | null;
 
 export default function Navbar() {
-  const [inloggad, setInloggad] = useState(false);
+  const [session, setSession] = useState<Session>(undefined as unknown as Session);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setInloggad(!!session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setInloggad(!!session);
-    });
-
-    return () => subscription.unsubscribe();
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => setSession(data))
+      .catch(() => setSession(null));
   }, []);
 
   async function handleLoggaUt() {
-    await supabase.auth.signOut();
+    await fetch("/api/auth/logga-ut", { method: "POST" });
+    setSession(null);
     router.push("/");
+    router.refresh();
   }
+
+  const inloggad = !!session;
+  const laddar = session === (undefined as unknown as Session);
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -42,36 +43,29 @@ export default function Navbar() {
               Bostäder
             </Link>
 
-            {inloggad ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-gray-600 hover:text-[#2D7A4F] transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <button
-                  onClick={handleLoggaUt}
-                  className="text-sm bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  Logga ut
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/logga-in"
-                  className="text-sm text-gray-600 hover:text-[#2D7A4F] transition-colors"
-                >
-                  Logga in
-                </Link>
-                <Link
-                  href="/registrera"
-                  className="text-sm bg-[#2D7A4F] text-white px-4 py-2 rounded-full hover:bg-[#225f3d] transition-colors"
-                >
-                  Registrera
-                </Link>
-              </>
+            {!laddar && (
+              inloggad ? (
+                <>
+                  <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#2D7A4F] transition-colors">
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleLoggaUt}
+                    className="text-sm bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-colors"
+                  >
+                    Logga ut
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/logga-in" className="text-sm text-gray-600 hover:text-[#2D7A4F] transition-colors">
+                    Logga in
+                  </Link>
+                  <Link href="/registrera" className="text-sm bg-[#2D7A4F] text-white px-4 py-2 rounded-full hover:bg-[#225f3d] transition-colors">
+                    Registrera
+                  </Link>
+                </>
+              )
             )}
           </div>
 
@@ -100,47 +94,33 @@ export default function Navbar() {
       {/* Mobil-dropdown */}
       {menuOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 flex flex-col gap-3">
-          <Link
-            href="/bostader"
-            className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1"
-            onClick={() => setMenuOpen(false)}
-          >
+          <Link href="/bostader" className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1" onClick={() => setMenuOpen(false)}>
             Bostäder
           </Link>
 
-          {inloggad ? (
-            <>
-              <Link
-                href="/dashboard"
-                className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1"
-                onClick={() => setMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <button
-                onClick={() => { setMenuOpen(false); handleLoggaUt(); }}
-                className="text-sm text-left text-gray-700 hover:text-[#2D7A4F] transition-colors py-1"
-              >
-                Logga ut
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/logga-in"
-                className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1"
-                onClick={() => setMenuOpen(false)}
-              >
-                Logga in
-              </Link>
-              <Link
-                href="/registrera"
-                className="text-sm bg-[#2D7A4F] text-white px-4 py-2 rounded-full hover:bg-[#225f3d] transition-colors text-center"
-                onClick={() => setMenuOpen(false)}
-              >
-                Registrera
-              </Link>
-            </>
+          {!laddar && (
+            inloggad ? (
+              <>
+                <Link href="/dashboard" className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1" onClick={() => setMenuOpen(false)}>
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => { setMenuOpen(false); handleLoggaUt(); }}
+                  className="text-sm text-left text-gray-700 hover:text-[#2D7A4F] transition-colors py-1"
+                >
+                  Logga ut
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/logga-in" className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1" onClick={() => setMenuOpen(false)}>
+                  Logga in
+                </Link>
+                <Link href="/registrera" className="text-sm bg-[#2D7A4F] text-white px-4 py-2 rounded-full hover:bg-[#225f3d] transition-colors text-center" onClick={() => setMenuOpen(false)}>
+                  Registrera
+                </Link>
+              </>
+            )
           )}
         </div>
       )}

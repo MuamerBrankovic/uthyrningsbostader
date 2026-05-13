@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Registrera() {
   const [namn, setNamn] = useState("");
@@ -10,24 +11,25 @@ export default function Registrera() {
   const [laddar, setLaddar] = useState(false);
   const [registrerad, setRegistrerad] = useState(false);
   const [fel, setFel] = useState("");
+  const router = useRouter();
 
   async function handleRegistrera() {
     if (!namn || !email || !losenord) return;
     setLaddar(true);
     setFel("");
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: losenord,
-      options: {
-        data: { namn, roll },
-      },
+    const res = await fetch("/api/auth/registrera", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ namn, email, losenord, roll }),
     });
 
-    if (error) {
-      setFel(error.message);
-    } else {
+    if (res.ok) {
       setRegistrerad(true);
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setFel(data.error ?? "Något gick fel. Försök igen.");
     }
     setLaddar(false);
   }
@@ -39,10 +41,10 @@ export default function Registrera() {
           <div className="w-16 h-16 bg-[#e8f5ee] rounded-full flex items-center justify-center text-2xl mx-auto mb-4">✓</div>
           <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Konto skapat!</h2>
           <p className="text-gray-400 text-sm mb-2">Välkommen, {namn}!</p>
-          <p className="text-gray-400 text-sm mb-6">Kolla din e-post för att bekräfta ditt konto.</p>
-          <a href="/" className="bg-[#2D7A4F] text-white text-sm px-8 py-3 rounded-full hover:bg-[#225f3d] transition-colors">
+          <p className="text-gray-400 text-sm mb-6">Du är nu inloggad och redo att använda tjänsten.</p>
+          <Link href="/" className="bg-[#2D7A4F] text-white text-sm px-8 py-3 rounded-full hover:bg-[#225f3d] transition-colors">
             Gå till startsidan
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -53,9 +55,9 @@ export default function Registrera() {
       <div className="w-full max-w-md">
 
         <div className="text-center mb-10">
-          <a href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
+          <Link href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
             Uthyrnings<span className="text-[#2D7A4F]">Bostäder</span>
-          </a>
+          </Link>
           <p className="text-gray-400 text-sm mt-2">Skapa ditt konto</p>
         </div>
 
@@ -139,9 +141,9 @@ export default function Registrera() {
 
         <p className="text-center text-sm text-gray-400 mt-6">
           Har du redan ett konto?{" "}
-          <a href="/logga-in" className="text-[#2D7A4F] font-medium hover:underline">
+          <Link href="/logga-in" className="text-[#2D7A4F] font-medium hover:underline">
             Logga in här
-          </a>
+          </Link>
         </p>
 
       </div>
