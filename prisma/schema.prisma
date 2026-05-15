@@ -17,12 +17,24 @@ model Bostad {
   delade_utrymmen      String[]
   inkluderat           String[]
   narmaste_hallplats   String?
+  bostadstyp           String   @default("privat_rum")
   kontaktperson_namn   String?
   kontaktperson_bild   String?
   kontaktperson_email  String?
   kontaktperson_telefon String?
   rum                  Rum[]
   created_at           DateTime @default(now())
+}
+
+model Hyresvardsanmalan {
+  id          String   @id @default(uuid())
+  namn        String
+  telefon     String?
+  email       String
+  stad        String?
+  adress      String?
+  meddelande  String?
+  created_at  DateTime @default(now())
 }
 
 model Rum {
