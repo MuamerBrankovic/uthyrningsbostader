@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Bildgalleri from "@/app/components/Bildgalleri";
 import { formateraDatum, formateraKortDatum } from "@/lib/datum";
+import { ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
 
 type Bokning = {
   id: string;
@@ -78,6 +79,28 @@ function getRumStatusLabel(bokningar: Bokning[]): { label: string; color: string
   const fran = new Date(latest);
   fran.setDate(fran.getDate() + 1);
   return { label: `Ledigt från ${formateraDatum(fran)}`, color: "yellow" };
+}
+
+function StatusCirkelStor({ color }: { color: "green" | "yellow" | "gray" }) {
+  if (color === "green") {
+    return (
+      <span className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+        <CheckCircle className="w-5 h-5 text-white" />
+      </span>
+    );
+  }
+  if (color === "yellow") {
+    return (
+      <span className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center shadow-sm">
+        <Clock className="w-5 h-5 text-white" />
+      </span>
+    );
+  }
+  return (
+    <span className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
+      <XCircle className="w-5 h-5 text-white" />
+    </span>
+  );
 }
 
 type Avtalstyp = "medlemskap" | "standard" | "premium";
@@ -333,10 +356,10 @@ export default function RumSida({ rumId }: { rumId: string }) {
 
   const statusBadgeClass =
     statusInfo.color === "green"
-      ? "bg-green-100 text-green-700"
+      ? "bg-green-50 text-green-700"
       : statusInfo.color === "yellow"
-      ? "bg-yellow-100 text-yellow-700"
-      : "bg-gray-100 text-gray-500";
+      ? "bg-yellow-50 text-yellow-700"
+      : "bg-red-50 text-red-700";
 
   const kanBokas =
     statusInfo.color !== "gray" ||
@@ -346,8 +369,12 @@ export default function RumSida({ rumId }: { rumId: string }) {
     <>
       <main className="min-h-screen bg-[#F8F7F4]">
         <div className="max-w-4xl mx-auto px-8 py-12">
-          <Link href={`/bostad/${rum.bostad.id}`} className="text-sm text-[#2D7A4F] hover:underline mb-8 block">
-            ← Tillbaka till {rum.bostad.namn}
+          <Link
+            href={`/bostad/${rum.bostad.id}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2D7A4F] hover:underline mb-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Tillbaka till {rum.bostad.namn}
           </Link>
 
           <div className="grid md:grid-cols-5 gap-8">
@@ -406,13 +433,21 @@ export default function RumSida({ rumId }: { rumId: string }) {
             {/* HÖGER — Bokningsbox */}
             <div className="md:col-span-2">
               <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24">
+                {/* Status-cirkel ovanför priset */}
+                <div className="flex items-center gap-3 mb-4">
+                  <StatusCirkelStor color={statusInfo.color as "green" | "yellow" | "gray"} />
+                  <div>
+                    <p className={`text-sm font-semibold ${statusInfo.color === "green" ? "text-green-700" : statusInfo.color === "yellow" ? "text-yellow-700" : "text-red-600"}`}>
+                      {statusInfo.label}
+                    </p>
+                    <p className="text-xs text-gray-400">Tillgänglighet</p>
+                  </div>
+                </div>
+
                 <p className="text-2xl font-bold text-[#2D7A4F]">{rum.manadshyra.toLocaleString()} kr</p>
                 <p className="text-xs text-gray-400 mb-1">per månad</p>
                 {rum.kvm && <p className="text-xs text-gray-400 mb-5">{rum.kvm} kvm</p>}
-
-                <div className={`rounded-xl px-4 py-3 mb-5 text-sm font-medium ${statusBadgeClass}`}>
-                  {statusInfo.label}
-                </div>
+                {!rum.kvm && <div className="mb-5" />}
 
                 {bokad ? (
                   <div className="bg-[#e8f5ee] rounded-xl p-4 text-center">

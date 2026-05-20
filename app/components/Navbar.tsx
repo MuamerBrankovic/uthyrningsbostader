@@ -95,7 +95,8 @@ export default function Navbar() {
 
             {/* Hamburger (mobil) */}
             <button
-              className="md:hidden text-gray-600 hover:text-[#2D7A4F] transition-colors p-2"
+              type="button"
+              className="md:hidden text-gray-600 hover:text-[#2D7A4F] transition-colors p-3 -mr-1"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label="Öppna meny"
             >
@@ -117,7 +118,7 @@ export default function Navbar() {
 
         {/* Mobil-dropdown */}
         {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 flex flex-col gap-3">
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 flex flex-col gap-3 relative z-50">
             <Link href="/bostader" className="text-sm text-gray-700 hover:text-[#2D7A4F] transition-colors py-1" onClick={() => setMenuOpen(false)}>
               Bostäder
             </Link>

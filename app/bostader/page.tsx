@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
+import BildPlatshallare from "@/app/components/BildPlatshallare";
 
 const STADER = ["Linköping", "Norrköping"] as const;
 
@@ -201,22 +203,27 @@ function BostaderContent() {
                   <Link
                     href={`/bostad/${b.id}`}
                     key={b.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow cursor-pointer block"
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer block"
                   >
-                    <div className="h-48 bg-[#e8f5ee] flex items-center justify-center text-4xl relative overflow-hidden">
+                    <div className="h-48 relative overflow-hidden bg-[#e8f5ee]">
                       {(() => {
                         const forstaRumBild = b.rum.find((r) => r.bilder.length > 0)?.bilder[0];
                         const bildUrl = b.bilder[0] ?? forstaRumBild ?? null;
                         return bildUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={bildUrl} alt={b.namn} className="w-full h-full object-cover" />
+                          <Image
+                            src={bildUrl}
+                            alt={b.namn}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                          />
                         ) : (
-                          <span className="text-[#2D7A4F] opacity-30 text-6xl select-none">🏠</span>
+                          <BildPlatshallare className="absolute inset-0" />
                         );
                       })()}
                       {ledigaRum > 0 && (
-                        <span className="absolute top-3 left-3 text-xs font-semibold bg-white text-[#2D7A4F] px-3 py-1 rounded-full border border-[#c8e8d8]">
-                          {ledigaRum} ledigt rum
+                        <span className="absolute top-3 left-3 text-xs font-semibold bg-white text-[#2D7A4F] px-3 py-1 rounded-full border border-[#c8e8d8] z-10">
+                          {ledigaRum} {ledigaRum === 1 ? "ledigt rum" : "lediga rum"}
                         </span>
                       )}
                     </div>
@@ -225,7 +232,7 @@ function BostaderContent() {
                         <h3 className="font-semibold text-[#1a1a1a] leading-snug">{b.namn}</h3>
                         <BostadsTypBadge typ={b.bostadstyp} />
                       </div>
-                      <p className="text-sm text-gray-400 mt-0.5">
+                      <p className="text-sm text-gray-500 mt-0.5">
                         {b.stadsdel ?? b.adress ?? ""}
                         {b.rum.length > 0 && ` · ${b.rum.length} rum`}
                       </p>

@@ -63,7 +63,7 @@ export default function Bildgalleri({ bilder, alt = "", placeholder = "🏠" }: 
         }}
       >
         <div style={{ opacity, transition: "opacity 150ms ease" }} className="absolute inset-0">
-          <Image src={bilder[index]} alt={alt} fill className="object-cover" />
+          <Image src={bilder[index]} alt={alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 640px" />
         </div>
 
         {bilder.length > 1 && (
@@ -110,7 +110,7 @@ export default function Bildgalleri({ bilder, alt = "", placeholder = "🏠" }: 
               }`}
             >
               <div className="relative w-full h-full">
-                <Image src={src} alt="" fill className="object-cover" />
+                <Image src={src} alt="" fill className="object-cover" sizes="64px" />
               </div>
             </button>
           ))}
