@@ -40,7 +40,7 @@ export default function Navbar() {
             {/* Logotyp */}
             <Link href="/" className="flex flex-col leading-none shrink-0">
               <span className="text-lg font-bold tracking-tight text-[#1a1a1a]">
-                Home for <span className="text-[#2D7A4F]">Us</span>
+                Re<span className="text-[#2D7A4F]">Loka</span>
               </span>
               <span className="text-[10px] text-gray-400 font-medium tracking-wide">
                 Linköping &amp; Norrköping

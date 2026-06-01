@@ -44,7 +44,7 @@ const sektioner = [
       },
       {
         f: "Vad händer om något går sönder?",
-        s: "Kontakta din tilldelade kontaktperson på Home for Us. Vi koordinerar med hyresvärden och ser till att det löses snabbt.",
+        s: "Kontakta din tilldelade kontaktperson på ReLoka. Vi koordinerar med hyresvärden och ser till att det löses snabbt.",
       },
     ],
   },
@@ -109,8 +109,8 @@ export default function Faq() {
           <h1 className="text-4xl font-bold text-[#1a1a1a] mt-3 mb-4">Vanliga frågor</h1>
           <p className="text-gray-500 text-sm">
             Hittar du inte svaret du söker? Kontakta oss direkt på{" "}
-            <a href="mailto:info@homeforus.se" className="text-[#2D7A4F] hover:underline">
-              info@homeforus.se
+            <a href="mailto:info@reloka.se" className="text-[#2D7A4F] hover:underline">
+              info@reloka.se
             </a>
             .
           </p>

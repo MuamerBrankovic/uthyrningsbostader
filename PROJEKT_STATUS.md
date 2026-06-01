@@ -165,79 +165,34 @@ Allt är organiserat och redo för vidare utveckling
 
 
 
-## Dag 5 — Plan: Polish, konvertering och tillväxt
+## Dag 5
 
-### Mål för Dag 5
-Göra hemsidan riktigt redo för första kund och marknadsföring. Fokus på 
-tydlighet, förtroende och konvertering — inte fler funktioner än nödvändigt.
+### Prio 1 — Bostäder och rum-upplevelsen
+- Bostadssidan fick stor huvudbild (hero) med mörk overlay + namn/adress
+- Faktarad uppdaterad med lucide-react ikoner (BedDouble, Users, CalendarDays, MapPin)
+- Nya rumskort: 208px bild, status-cirkel 28px (grön/gul/röd), hover-overlay från botten
+- Hover-overlay: statusinformation + CTA-knapp för alla tre statusar
+- Mobil bottom sheet: tap på (i)-ikon öppnar sheet, tap inuti stänger INTE, tap utanför stänger
+- Bildgalleri startar på bild 2 (hero visar bild 1 — ingen repetition)
+- BildPlatshallare-komponent: grön gradient när bilder saknas
+- Konsekvent typografi och spacing överallt
+- Rumssidan: röd badge + röd cirkel för "bokat" (konsekvent färg)
+- Bostadslistan: hover-lift + skugga, accent-grön bakgrund under bildladdning
 
-### Prio 1 — Bostäder och rum-upplevelsen (kärnvärdet)
-- Bostadssidan ska ha tydlig huvudbild på villan/lägenheten
-- Fliken "Tillgängliga rum" ska visa individuella bilder per rum
-- Hover-popup på rumskort:
-  - Grön cirkel-symbol + "Ledigt" + beskrivning när rummet är tillgängligt
-  - Röd cirkel-symbol + "Upptaget" + datum när det blir ledigt
-  - Info-text anpassad efter status (kort, tydlig, hjälpsam)
-- Förbättra bildhanteringen (storlekar, beskärning, kvalitet)
-- Designfinputs överallt — spacing, typografi, knappstilar
+### Buggar fixade
+- Bottom sheet stängde sig direkt vid tap inuti (sheetRef fix)
+- Desktop-overlay saknade CTA för "bokat tills vidare" (fallback "Visa rum")
+- Hamburger-menyn fungerade inte på mobil (tap-target för litet, 38px → 46px)
+- next.config.ts: allowedDevOrigins för lokal mobiltest
 
-### Prio 2 — Bokning + bekräftelse
-- Bekräftelsemail vid bokningsförfrågan (Resend eller liknande)
-  - Mail till kunden: "Din förfrågan är mottagen"
-  - Mail till oss (Mahir): "Ny förfrågan från [företag]"
-- Eventuell SMS-bekräftelse på sikt (Twilio eller 46elks)
-- Tydligare bekräftelsemeddelande på sajten efter skickad förfrågan
+### Verifierat
+- Alla fixar testade live på mobil
+- Hamburger-menyn fungerar
+- Bottom sheet fungerar korrekt (öppnar, stänger rätt)
+- Pushat till Vercel — live på https://uthyrningsbostader.vercel.app
 
-### Prio 3 — Konvertering och förtroende
-- Offertformulär (egen sida /offert) — ersätter dagens enkla modal
-- Tydligare CTA:er överallt — "Ring nu", "Få offert inom 3h"
-- Recensioner/citat-sektion på startsidan (även om vi börjar med 1-2 fiktiva 
-  innan vi har riktiga — eller hellre vänta tills första kunden)
-- Case-studie-mall för när första pilotkunden är klar
+### Nästa steg (Prio 2)
+- Bekräftelsemail vid bokning (Resend)
+- Offertformulär (/offert)
+- Admin-roll (bara du och Mahir kan lägga upp bostäder)
 
-### Prio 4 — Admin och säkerhet
-- Admin-roll för dig och Mahir (inte alla inloggade ska kunna lägga upp bostäder)
-- "Byt lösenord"-funktion i appen (slippa hasha manuellt i Neon)
-- "Glömt lösenord"-funktion (Resend för återställningsmail)
-- Skydd mot spam i kontaktformulär (honeypot eller enkel hCaptcha)
-
-### Prio 5 — Marknadsföring och tillväxt
-- Open Graph-bilder för delning på Facebook, LinkedIn, Instagram
-- Sitemap.xml + robots.txt
-- Google Analytics eller Vercel Analytics (gratis)
-- Förbereda för sociala medier:
-  - Facebook-företagssida (Mahir/Ako)
-  - Instagram-konto
-  - TikTok-konto (kort innehåll om Linköpings hyresmarknad, behind-the-scenes)
-  - LinkedIn-företagssida (viktigast för B2B!)
-- Innehållsidéer för socialt:
-  - "Vad ingår i en Home for Us-bostad" (foton + reels)
-  - "Mahir möter hyresvärdar" 
-  - Konsultcase: "Så bodde Anna när hon jobbade i Linköping"
-  - Tidsförlopp av rum-iordningställning
-- "Dela-knapp" för hyresvärdar (lockar fler)
-
-### Prio 6 — Affärsmässigt (utanför kod)
-- Uppdatera platshållare: telefon 013-XXX XX XX, info@homeforus.se, 
-  org.nr 559XXX-XXXX, adressen
-- Köpa egen domän: homeforus.se (kostar ~100 kr/år, t.ex. Loopia eller Binero)
-- Koppla domänen till Vercel
-- Bolagsregistrering (Mahir + Ako)
-- Företagsförsäkring
-- Bokföringsverktyg (Fortnox eller Bokio)
-- Granska hyresavtal-mallar med jurist
-- Säkra första hyresvärden (helst via personlig kontakt)
-- Lägg upp första riktiga bostäder med bilder
-
-### Förslag på arbetsordning
-1. Uppdatera platshållare (5 min — bara klistra in riktig info)
-2. Bostadsbild + rumsbilder + hover-statussymboler (1 stor sprint)
-3. Bekräftelsemail (Resend — gratis upp till 3000 mail/mån)
-4. Admin-roll + byt lösenord (säkerhet före marknadsföring)
-5. Open Graph-bilder + analytics
-6. Köpa domän och koppla
-7. Sociala medier-konton + innehållsplan
-
-### Tidsuppskattning
-- Tekniskt (prio 1-5): 2-3 effektiva arbetsdagar med agent
-- Affärsmässigt (prio 6): pågående parallellt med Mahir

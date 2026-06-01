@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Home for Us — Företagsbostäder i Linköping och Norrköping",
-    template: "%s | Home for Us",
+    default: "ReLoka — Företagsbostäder i Linköping och Norrköping",
+    template: "%s | ReLoka",
   },
   description:
-    "Home for Us hjälper HR-chefer och konsultansvariga att snabbt hitta möblerade bostäder i Linköping och Norrköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
+    "ReLoka hjälper HR-chefer och konsultansvariga att snabbt hitta möblerade bostäder i Linköping och Norrköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
   openGraph: {
-    title: "Home for Us — Företagsbostäder i Linköping och Norrköping",
+    title: "ReLoka — Företagsbostäder i Linköping och Norrköping",
     description:
       "Möblerade bostäder för konsulter och tjänsteresenärer. Flexibla avtal utan krångel.",
     locale: "sv_SE",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Home for Us — Företagsbostäder i Linköping och Norrköping",
+    title: "ReLoka — Företagsbostäder i Linköping och Norrköping",
     description:
       "Möblerade bostäder för konsulter och tjänsteresenärer. Flexibla avtal utan krångel.",
   },

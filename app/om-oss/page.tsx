@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Om oss",
   description:
-    "Lär känna grundarna bakom Home for Us — Mahir och Ako — och varför vi startade en plattform för företagsbostäder i Linköping och Norrköping.",
+    "Lär känna grundarna bakom ReLoka — Muamer och Mahir — och varför vi startade en plattform för företagsbostäder i Linköping och Norrköping.",
 };
 
 export default function OmOss() {
@@ -17,7 +17,7 @@ export default function OmOss() {
           <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Om oss</span>
           <h1 className="text-4xl font-bold text-[#1a1a1a] mt-3 mb-5">Vi byggde det vi saknade</h1>
           <p className="text-gray-500 text-lg leading-relaxed">
-            Home for Us grundades av Mahir och Ako efter att de själva upplevt hur frustrerande det är
+            ReLoka grundades av Muamer och Mahir efter att de själva upplevt hur frustrerande det är
             att hitta bra, flexibla bostäder till konsulter på uppdrag. Vi ville göra det enkelt — på riktigt.
           </p>
         </div>
@@ -28,32 +28,33 @@ export default function OmOss() {
         <h2 className="text-2xl font-bold text-[#1a1a1a] mb-12 text-center">Grundarna</h2>
         <div className="grid md:grid-cols-2 gap-8">
 
+          {/* Muamer */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-8">
+            <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5">
+              M
+            </div>
+            <h3 className="text-xl font-bold text-[#1a1a1a]">Muamer Brankovic</h3>
+            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Grundare &amp; styrelseledamot</p>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Muamer ansvarar för den digitala närvaron, hemsidan och marknadsföringen. Han driver
+              plattformen och den tekniska infrastrukturen — och tror på att teknik ska förenkla,
+              inte krångla till. Bygger systemen som gör att resten av teamet kan fokusera på det
+              mänskliga mötet med kunder och hyresvärdar.
+            </p>
+          </div>
+
           {/* Mahir */}
           <div className="bg-white rounded-2xl border border-gray-100 p-8">
             <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5">
               M
             </div>
-            <h3 className="text-xl font-bold text-[#1a1a1a]">Mahir</h3>
-            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Kundrelationer &amp; fastigheter</p>
+            <h3 className="text-xl font-bold text-[#1a1a1a]">Mahir Brankovic</h3>
+            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Grundare &amp; styrelsesuppleant</p>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Mahir ansvarar för kundrelationer, hyresvärdar och det dagliga nätverket av bostäder.
-              Med bakgrund inom fastigheter och servicebranschen vet han vad som krävs för att både
-              hyresgäst och hyresvärd ska känna sig trygga. Han är den som lyfter luren när det
-              behövs — och löser det som behöver lösas.
-            </p>
-          </div>
-
-          {/* Ako */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-8">
-            <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5">
-              A
-            </div>
-            <h3 className="text-xl font-bold text-[#1a1a1a]">Ako</h3>
-            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Digitalt &amp; marknad</p>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Ako driver den digitala sidan av Home for Us — plattformen, marknadsföringen och
-              den tekniska infrastrukturen. Han tror på att teknik ska förenkla, inte krångla till,
-              och bygger system som gör att resten av teamet kan fokusera på det mänskliga.
+              Mahir ansvarar för sälj, kundkontakt och bostadsförmedlingen. Med bakgrund inom
+              fastigheter och servicebranschen vet han vad som krävs för att både hyresgäst och
+              hyresvärd ska känna sig trygga. Han är den som lyfter luren när det behövs — och
+              löser det som behöver lösas.
             </p>
           </div>
         </div>
@@ -72,14 +73,14 @@ export default function OmOss() {
               ingen ville skriva under.
             </p>
             <p>
-              Mahir och Ako insåg att det saknades en seriös aktör som förstod B2B-logiken:
+              Muamer och Mahir insåg att det saknades en seriös aktör som förstod B2B-logiken:
               flexibla avtal, en enda faktura och en kontaktperson att ringa. Inte en app att
               navigera. Inte 14 hyresvärdar att förhandla med.
             </p>
             <p>
-              Home for Us lanserades 2026 med fokus på Linköping och Norrköping — två städer
-              med stark tillväxt inom tech, industri och offentlig sektor, och ett konstant
-              inflöde av konsulter på uppdrag.
+              ReLoka AB grundades 2026 i Linköping av Muamer och Mahir, med fokus på företagsbostäder
+              i Linköping och Norrköping — två städer med stark tillväxt inom tech, industri och
+              offentlig sektor, och ett konstant inflöde av konsulter på uppdrag.
             </p>
           </div>
         </div>
@@ -124,7 +125,7 @@ export default function OmOss() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href="mailto:info@homeforus.se"
+              href="mailto:info@reloka.se"
               className="inline-block bg-white text-[#2D7A4F] text-sm font-semibold px-8 py-3.5 rounded-full hover:bg-gray-50 transition-colors"
             >
               Kontakta oss

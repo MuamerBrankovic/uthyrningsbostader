@@ -33,11 +33,11 @@ function bokningAvailability(
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const rum = await getRum(id);
-  if (!rum) return { title: "Rum hittades inte — Home for Us" };
+  if (!rum) return { title: "Rum hittades inte — ReLoka" };
 
   const plats = rum.bostad.adress ?? rum.bostad.stadsdel ?? rum.bostad.namn;
   return {
-    title: `Möblerat rum i ${plats} — Home for Us`,
+    title: `Möblerat rum i ${plats} — ReLoka`,
     description:
       rum.beskrivning ??
       `${rum.namn} — ${rum.manadshyra.toLocaleString("sv-SE")} kr/mån. Ledigt möblerat rum hos ${rum.bostad.namn}.`,
@@ -81,6 +81,11 @@ export default async function Page({ params }: Props) {
           price: rum.manadshyra,
           priceCurrency: "SEK",
           availability: bokningAvailability(rum.bokningar),
+        },
+        provider: {
+          "@type": "Organization",
+          name: "ReLoka AB",
+          brand: "ReLoka",
         },
       }
     : null;

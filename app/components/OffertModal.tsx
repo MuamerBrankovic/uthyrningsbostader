@@ -68,7 +68,7 @@ export default function OffertModal({ open, onClose }: Props) {
           </a>
 
           <a
-            href="mailto:info@homeforus.se"
+            href="mailto:info@reloka.se"
             className="flex items-center gap-4 w-full bg-white border border-gray-200 text-[#1a1a1a] rounded-xl px-5 py-4 hover:border-[#2D7A4F] hover:bg-[#f8fdf9] transition-colors"
           >
             <span className="text-[#2D7A4F]">
@@ -79,7 +79,7 @@ export default function OffertModal({ open, onClose }: Props) {
             </span>
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Mejla oss</p>
-              <p className="font-semibold text-[#2D7A4F]">info@homeforus.se</p>
+              <p className="font-semibold text-[#2D7A4F]">info@reloka.se</p>
             </div>
           </a>
         </div>

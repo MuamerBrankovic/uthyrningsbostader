@@ -1,4 +1,4 @@
-# UthyrningsBostäder — Home for Us
+# UthyrningsBostäder — ReLoka
 
 Plattform för uthyrning av rum i kollektivboenden. Kopplar ihop uthyrare och hyresgäster med möblerade bostäder i hela Sverige.
 

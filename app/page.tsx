@@ -3,7 +3,7 @@ import Link from "next/link";
 import OffertKnapp from "@/app/components/OffertKnapp";
 
 export const metadata: Metadata = {
-  title: "Home for Us — Företagsbostäder i Linköping och Norrköping",
+  title: "ReLoka — Företagsbostäder i Linköping och Norrköping",
   description:
     "Möblerade bostäder för konsulter och tjänsteresenärer i Linköping och Norrköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
 };
@@ -41,7 +41,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Varför Home for Us?</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Varför ReLoka?</span>
               <h2 className="text-3xl font-bold text-[#1a1a1a] mt-3 mb-6">
                 Att hitta bostad till konsulter<br />är ett heltidsjobb i sig
               </h2>
@@ -60,7 +60,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="bg-[#F8F7F4] rounded-2xl p-8">
-              <h3 className="text-lg font-semibold text-[#1a1a1a] mb-5">Med Home for Us istället:</h3>
+              <h3 className="text-lg font-semibold text-[#1a1a1a] mb-5">Med ReLoka istället:</h3>
               <ul className="space-y-4 text-gray-700 text-sm">
                 {[
                   "Fullt möblerade bostäder redo att flytta in i — direkt.",
@@ -260,7 +260,7 @@ export default function Home() {
           </div>
           <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
             <p className="text-gray-300 text-sm leading-relaxed italic mb-6">
-              &ldquo;Vi anlitar konsulter i Linköping regelbundet och Home for Us har sparat oss otaliga timmar
+              &ldquo;Vi anlitar konsulter i Linköping regelbundet och ReLoka har sparat oss otaliga timmar
               av letande och administration. Rekommenderas varmt.&rdquo;
             </p>
             <div className="flex items-center gap-3">
@@ -311,10 +311,10 @@ export default function Home() {
               013-XXX XX XX
             </a>
             <a
-              href="mailto:info@homeforus.se"
+              href="mailto:info@reloka.se"
               className="inline-block border border-white/40 text-white text-sm font-medium px-8 py-3.5 rounded-full hover:bg-white/10 transition-colors"
             >
-              info@homeforus.se
+              info@reloka.se
             </a>
           </div>
         </div>
@@ -326,14 +326,14 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between gap-10 mb-10">
             <div>
               <div className="flex flex-col leading-none mb-3">
-                <span className="text-white font-bold text-lg">Home for <span className="text-[#2D7A4F]">Us</span></span>
+                <span className="text-white font-bold text-lg">Re<span className="text-[#2D7A4F]">Loka</span> AB</span>
                 <span className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">Linköping &amp; Norrköping</span>
               </div>
               <p className="text-sm max-w-xs leading-relaxed">
                 Möblerade företagsbostäder med personlig service. Vi gör boende-logistiken enkel för HR och konsultbolag.
               </p>
-              <p className="text-xs text-gray-600 mt-3">Org.nr: 559XXX-XXXX</p>
-              <p className="text-xs text-gray-600">Storgatan 1, 582 22 Linköping</p>
+              <p className="text-xs text-gray-600 mt-3">Org.nr: under registrering</p>
+              <p className="text-xs text-gray-600">Linköping, Sverige</p>
             </div>
             <div className="flex gap-16 text-sm">
               <div className="flex flex-col gap-2">
@@ -346,13 +346,13 @@ export default function Home() {
                 <span className="text-white font-medium mb-1 text-xs uppercase tracking-wider">Företaget</span>
                 <Link href="/om-oss" className="hover:text-white transition-colors">Om oss</Link>
                 <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
-                <a href="mailto:info@homeforus.se" className="hover:text-white transition-colors">Kontakt</a>
+                <a href="mailto:info@reloka.se" className="hover:text-white transition-colors">Kontakt</a>
               </div>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-6 text-xs text-gray-600 flex flex-col sm:flex-row justify-between gap-2">
-            <span>© 2026 Home for Us. Alla rättigheter förbehållna.</span>
-            <a href="mailto:info@homeforus.se" className="hover:text-gray-400 transition-colors">info@homeforus.se</a>
+            <span>© 2026 ReLoka AB. Alla rättigheter förbehållna.</span>
+            <a href="mailto:info@reloka.se" className="hover:text-gray-400 transition-colors">info@reloka.se</a>
           </div>
         </div>
       </footer>
