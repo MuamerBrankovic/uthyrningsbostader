@@ -1,4 +1,16 @@
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+
+export async function GET() {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
+  }
+  const anmalningar = await prisma.hyresvardsanmalan.findMany({
+    orderBy: { created_at: "desc" },
+  });
+  return Response.json(anmalningar);
+}
 
 type Body = {
   namn: string;

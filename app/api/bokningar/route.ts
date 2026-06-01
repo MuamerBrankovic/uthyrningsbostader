@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { skickaBokningsmail } from "@/lib/email";
 
 export async function GET() {
   try {
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
     const rum = await prisma.rum.findUnique({
       where: { id: rum_id },
       include: {
+        bostad: { select: { namn: true, stadsdel: true, adress: true } },
         bokningar: { where: { status: { not: "avbokad" } } },
       },
     });
@@ -101,6 +103,13 @@ export async function POST(request: Request) {
         avtalstyp: avtalstyp ?? "standard",
       },
     });
+
+    // Bekräftelsemail — får ALDRIG blockera success-svaret
+    skickaBokningsmail(
+      bokning,
+      { namn: rum.namn, manadshyra: rum.manadshyra },
+      rum.bostad
+    ).catch((err) => console.error("[email] Uncaught bokningsmail-fel:", err));
 
     return Response.json(bokning, { status: 201 });
   } catch (err) {

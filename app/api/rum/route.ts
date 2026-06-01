@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return Response.json({ error: "Ej inloggad" }, { status: 401 });
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return Response.json({ error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();

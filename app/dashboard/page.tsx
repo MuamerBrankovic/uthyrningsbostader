@@ -33,7 +33,48 @@ type BostadOption = {
 
 type Session = { userId: string; email: string; namn: string; roll: string } | null;
 
-type Flik = "bokningar" | "laggUppBostad" | "laggUppRum";
+type Flik =
+  | "bokningar"
+  | "laggUppBostad"
+  | "laggUppRum"
+  | "offerter"
+  | "hyresvardsanmalningar";
+
+type Offert = {
+  id: string;
+  foretag: string;
+  orgnr: string | null;
+  kontaktperson: string;
+  email: string;
+  telefon: string;
+  stad: string;
+  antal_personer: number | null;
+  inflyttning: string | null;
+  bostadstyp: string | null;
+  meddelande: string | null;
+  status: string;
+  created_at: string;
+};
+
+type Hyresvardsanmalan = {
+  id: string;
+  namn: string;
+  telefon: string | null;
+  email: string;
+  stad: string | null;
+  adress: string | null;
+  meddelande: string | null;
+  created_at: string;
+};
+
+function bostadstypLabel(t: string | null): string {
+  if (!t) return "—";
+  if (t === "privat_rum") return "Privat rum";
+  if (t === "rum_eget_bad") return "Rum med eget bad";
+  if (t === "hel_lagenhet") return "Hel lägenhet";
+  if (t === "vet_ej") return "Vet ej";
+  return t;
+}
 
 const INPUT_CLS =
   "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors";
@@ -653,6 +694,205 @@ function LaggUppRum() {
   );
 }
 
+// ─── Flik: Offertförfrågningar (admin) ───────────────────────────────────────
+
+function Offertforfragningar() {
+  const [offerter, setOfferter] = useState<Offert[]>([]);
+  const [laddar, setLaddar] = useState(true);
+  const [fel, setFel] = useState("");
+
+  useEffect(() => {
+    fetch("/api/offert")
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          setFel(data.error ?? "Kunde inte hämta offertförfrågningar");
+          return [];
+        }
+        return r.json();
+      })
+      .then((data) => {
+        setOfferter(Array.isArray(data) ? data : []);
+        setLaddar(false);
+      })
+      .catch(() => {
+        setFel("Kunde inte hämta offertförfrågningar");
+        setLaddar(false);
+      });
+  }, []);
+
+  if (laddar) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <div className="w-6 h-6 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin mx-auto" />
+      </div>
+    );
+  }
+
+  if (fel) {
+    return (
+      <div className="bg-red-50 text-red-500 rounded-2xl p-6 text-sm">{fel}</div>
+    );
+  }
+
+  if (offerter.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <p className="text-gray-400 text-sm">Inga offertförfrågningar ännu.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {offerter.map((o) => (
+        <div
+          key={o.id}
+          className="bg-white rounded-2xl border border-gray-100 p-6"
+        >
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+            <div>
+              <h3 className="font-semibold text-[#1a1a1a] text-lg">{o.foretag}</h3>
+              <p className="text-sm text-gray-500">
+                {o.kontaktperson} · {o.stad}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs px-3 py-1 rounded-full bg-[#e8f5ee] text-[#2D7A4F]">
+                {o.status === "ny" ? "Ny" : o.status}
+              </span>
+              <span className="text-xs text-gray-400">
+                {formateraDatum(o.created_at)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <FaktaRad label="E-post" varde={
+              <a href={`mailto:${o.email}`} className="text-[#2D7A4F] hover:underline">{o.email}</a>
+            } />
+            <FaktaRad label="Telefon" varde={
+              <a href={`tel:${o.telefon}`} className="text-[#2D7A4F] hover:underline">{o.telefon}</a>
+            } />
+            <FaktaRad label="Org.nr" varde={o.orgnr ?? "—"} />
+            <FaktaRad label="Antal personer" varde={o.antal_personer != null ? String(o.antal_personer) : "—"} />
+            <FaktaRad label="Inflyttning" varde={o.inflyttning ? formateraDatum(o.inflyttning) : "—"} />
+            <FaktaRad label="Bostadstyp" varde={bostadstypLabel(o.bostadstyp)} />
+          </div>
+
+          {o.meddelande && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                Meddelande
+              </p>
+              <p className="text-sm text-gray-700 whitespace-pre-line">{o.meddelande}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Flik: Hyresvärdsanmälningar (admin) ─────────────────────────────────────
+
+function Hyresvardsanmalningar() {
+  const [anmalningar, setAnmalningar] = useState<Hyresvardsanmalan[]>([]);
+  const [laddar, setLaddar] = useState(true);
+  const [fel, setFel] = useState("");
+
+  useEffect(() => {
+    fetch("/api/hyresvardar")
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          setFel(data.error ?? "Kunde inte hämta anmälningar");
+          return [];
+        }
+        return r.json();
+      })
+      .then((data) => {
+        setAnmalningar(Array.isArray(data) ? data : []);
+        setLaddar(false);
+      })
+      .catch(() => {
+        setFel("Kunde inte hämta anmälningar");
+        setLaddar(false);
+      });
+  }, []);
+
+  if (laddar) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <div className="w-6 h-6 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin mx-auto" />
+      </div>
+    );
+  }
+
+  if (fel) {
+    return (
+      <div className="bg-red-50 text-red-500 rounded-2xl p-6 text-sm">{fel}</div>
+    );
+  }
+
+  if (anmalningar.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <p className="text-gray-400 text-sm">Inga hyresvärdsanmälningar ännu.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {anmalningar.map((a) => (
+        <div
+          key={a.id}
+          className="bg-white rounded-2xl border border-gray-100 p-6"
+        >
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+            <div>
+              <h3 className="font-semibold text-[#1a1a1a] text-lg">{a.namn}</h3>
+              {a.stad && <p className="text-sm text-gray-500">{a.stad}</p>}
+            </div>
+            <span className="text-xs text-gray-400">{formateraDatum(a.created_at)}</span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <FaktaRad label="E-post" varde={
+              <a href={`mailto:${a.email}`} className="text-[#2D7A4F] hover:underline">{a.email}</a>
+            } />
+            <FaktaRad label="Telefon" varde={
+              a.telefon ? <a href={`tel:${a.telefon}`} className="text-[#2D7A4F] hover:underline">{a.telefon}</a> : "—"
+            } />
+            <FaktaRad label="Adress" varde={a.adress ?? "—"} />
+          </div>
+
+          {a.meddelande && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                Meddelande
+              </p>
+              <p className="text-sm text-gray-700 whitespace-pre-line">{a.meddelande}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FaktaRad({ label, varde }: { label: string; varde: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-gray-400 text-xs uppercase tracking-wider font-semibold pt-0.5">
+        {label}
+      </span>
+      <span className="text-[#1a1a1a] text-right">{varde}</span>
+    </div>
+  );
+}
+
 // ─── Huvud-komponent ─────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -695,34 +935,51 @@ export default function Dashboard() {
     );
   }
 
+  const isAdmin = session?.roll === "admin";
+
   const flikar: { key: Flik; label: string }[] = [
     { key: "bokningar", label: "Mina bokningar" },
-    { key: "laggUppBostad", label: "Lägg upp bostad" },
-    { key: "laggUppRum", label: "Lägg upp rum" },
+    ...(isAdmin
+      ? ([
+          { key: "offerter", label: "Offertförfrågningar" },
+          { key: "hyresvardsanmalningar", label: "Hyresvärdsanmälningar" },
+          { key: "laggUppBostad", label: "Lägg upp bostad" },
+          { key: "laggUppRum", label: "Lägg upp rum" },
+        ] as { key: Flik; label: string }[])
+      : []),
   ];
 
   return (
     <main className="min-h-screen bg-[#F8F7F4]">
-      <div className="max-w-5xl mx-auto px-8 py-12">
+      <div className="max-w-5xl mx-auto px-6 md:px-8 py-12">
 
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-2">
           <h1 className="text-3xl font-bold text-[#1a1a1a]">Min dashboard</h1>
           {session && (
-            <span className="text-sm text-gray-400 mt-1.5">
+            <span className="text-sm text-gray-400 md:mt-1.5">
               Inloggad som{" "}
               <span className="text-[#1a1a1a] font-medium">{session.namn}</span>
+              {isAdmin && (
+                <span className="ml-2 inline-block text-[10px] font-semibold uppercase tracking-wider text-[#2D7A4F] bg-[#e8f5ee] px-2 py-0.5 rounded-full">
+                  Admin
+                </span>
+              )}
             </span>
           )}
         </div>
-        <p className="text-gray-400 mb-10">Hantera dina bokningar och bostäder</p>
+        <p className="text-gray-400 mb-10">
+          {isAdmin
+            ? "Hantera bokningar, offerter och bostäder"
+            : "Översikt över dina bokningar"}
+        </p>
 
         {/* FLIKAR */}
-        <div className="flex flex-wrap gap-2 bg-white p-1 rounded-xl border border-gray-100 w-fit mb-8">
+        <div className="flex flex-wrap gap-2 bg-white p-1 rounded-xl border border-gray-100 w-fit mb-8 overflow-x-auto max-w-full">
           {flikar.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setAktivFlik(key)}
-              className={`text-sm px-5 py-2.5 rounded-lg font-medium transition-colors ${
+              className={`text-sm px-4 md:px-5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
                 aktivFlik === key
                   ? "bg-[#2D7A4F] text-white"
                   : "text-gray-400 hover:text-gray-600"
@@ -734,8 +991,10 @@ export default function Dashboard() {
         </div>
 
         {aktivFlik === "bokningar" && <MinaBokningar bokningar={bokningar} />}
-        {aktivFlik === "laggUppBostad" && <LaggUppBostad />}
-        {aktivFlik === "laggUppRum" && <LaggUppRum />}
+        {isAdmin && aktivFlik === "offerter" && <Offertforfragningar />}
+        {isAdmin && aktivFlik === "hyresvardsanmalningar" && <Hyresvardsanmalningar />}
+        {isAdmin && aktivFlik === "laggUppBostad" && <LaggUppBostad />}
+        {isAdmin && aktivFlik === "laggUppRum" && <LaggUppRum />}
       </div>
     </main>
   );

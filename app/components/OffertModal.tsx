@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import Link from "next/link";
 
 type Props = {
   open: boolean;
@@ -47,22 +48,41 @@ export default function OffertModal({ open, onClose }: Props) {
           </span>
           <h2 className="text-2xl font-bold text-[#1a1a1a]">Få en offert</h2>
           <p className="text-gray-500 text-sm mt-2">
-            Vi svarar normalt inom 2 timmar på vardagar. Berätta kort om ert behov så återkommer vi med ett anpassat förslag.
+            Vi svarar normalt inom 3 timmar på vardagar. Välj hur ni vill kontakta oss.
           </p>
         </div>
 
-        <div className="space-y-4">
-          <a
-            href="tel:013XXXXXX"
+        <div className="space-y-3">
+          <Link
+            href="/offert"
+            onClick={onClose}
             className="flex items-center gap-4 w-full bg-[#2D7A4F] text-white rounded-xl px-5 py-4 hover:bg-[#225f3d] transition-colors"
           >
-            <span className="text-xl">
+            <span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="9" y1="13" x2="15" y2="13" />
+                <line x1="9" y1="17" x2="15" y2="17" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-xs text-green-100 font-medium uppercase tracking-wider">Rekommenderat</p>
+              <p className="font-semibold">Fyll i offertformulär</p>
+            </div>
+          </Link>
+
+          <a
+            href="tel:013XXXXXX"
+            className="flex items-center gap-4 w-full bg-white border border-gray-200 text-[#1a1a1a] rounded-xl px-5 py-4 hover:border-[#2D7A4F] hover:bg-[#f8fdf9] transition-colors"
+          >
+            <span className="text-[#2D7A4F]">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.2 2 2 0 012 .01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
               </svg>
             </span>
             <div>
-              <p className="text-xs text-green-200 font-medium uppercase tracking-wider">Ring oss</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Ring oss</p>
               <p className="font-semibold">013-XXX XX XX</p>
             </div>
           </a>

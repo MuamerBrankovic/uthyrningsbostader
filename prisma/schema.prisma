@@ -77,3 +77,19 @@ model Anvandare {
   roll         String   @default("hyresgast")
   created_at   DateTime @default(now())
 }
+
+model Offertforfragan {
+  id              String    @id @default(uuid())
+  foretag         String
+  orgnr           String?
+  kontaktperson   String
+  email           String
+  telefon         String
+  stad            String
+  antal_personer  Int?
+  inflyttning     DateTime?
+  bostadstyp      String?
+  meddelande      String?
+  status          String    @default("ny")
+  created_at      DateTime  @default(now())
+}

@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-change-in-production"
@@ -13,6 +14,32 @@ export type SessionPayload = {
   namn: string;
   roll: string;
 };
+
+export type AdminResult =
+  | { ok: true; roll: "admin"; email: string; userId: string }
+  | { ok: false; status: 401 | 403; error: string };
+
+export async function requireAdmin(): Promise<AdminResult> {
+  const session = await getSession();
+  if (!session) {
+    return { ok: false, status: 401, error: "Ej inloggad" };
+  }
+
+  const anvandare = await prisma.anvandare.findUnique({
+    where: { email: session.email },
+    select: { id: true, email: true, roll: true },
+  });
+
+  if (!anvandare || anvandare.roll !== "admin") {
+    return {
+      ok: false,
+      status: 403,
+      error: "Endast administratörer kan utföra denna åtgärd",
+    };
+  }
+
+  return { ok: true, roll: "admin", email: anvandare.email, userId: anvandare.id };
+}
 
 export async function createSession(payload: SessionPayload): Promise<void> {
   const token = await new SignJWT(payload as Record<string, unknown>)

@@ -1,13 +1,13 @@
-import { getSession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
-  const session = await getSession();
-  if (!session) {
-    return Response.json({ error: "Ej inloggad" }, { status: 401 });
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
   }
 
   const formData = await request.formData();
