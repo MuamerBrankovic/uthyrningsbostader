@@ -35,6 +35,7 @@ type Session = { userId: string; email: string; namn: string; roll: string } | n
 
 type Flik =
   | "bokningar"
+  | "konto"
   | "laggUppBostad"
   | "laggUppRum"
   | "offerter"
@@ -882,6 +883,136 @@ function Hyresvardsanmalningar() {
   );
 }
 
+// ─── Flik: Mitt konto (alla inloggade) ──────────────────────────────────────
+
+function MittKonto({ session }: { session: NonNullable<Session> }) {
+  const [nuvarande, setNuvarande] = useState("");
+  const [nyttLosenord, setNyttLosenord] = useState("");
+  const [bekrafta, setBekrafta] = useState("");
+  const [laddar, setLaddar] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [fel, setFel] = useState("");
+
+  const matchar = nyttLosenord !== "" && nyttLosenord === bekrafta;
+  const tillrackligtLangt = nyttLosenord.length >= 8;
+  const kanSpara = nuvarande.length > 0 && tillrackligtLangt && matchar && !laddar;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!kanSpara) return;
+    setLaddar(true);
+    setFel("");
+    setSuccess(false);
+
+    try {
+      const res = await fetch("/api/auth/byt-losenord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nuvarandeLosenord: nuvarande,
+          nyttLosenord,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSuccess(true);
+        setNuvarande("");
+        setNyttLosenord("");
+        setBekrafta("");
+        setTimeout(() => setSuccess(false), 6000);
+      } else {
+        setFel(data.error ?? "Kunde inte byta lösenord");
+      }
+    } catch {
+      setFel("Kunde inte skicka. Kontrollera anslutningen.");
+    }
+    setLaddar(false);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 max-w-xl">
+      <h2 className="font-semibold text-[#1a1a1a] mb-1">Kontouppgifter</h2>
+      <p className="text-sm text-gray-400 mb-6">
+        Inloggad som <span className="text-[#1a1a1a] font-medium">{session.email}</span>
+      </p>
+
+      <div className="border-t border-gray-100 pt-6">
+        <h3 className="font-semibold text-[#1a1a1a] mb-1">Byt lösenord</h3>
+        <p className="text-xs text-gray-400 mb-5">
+          Minst 8 tecken. Använd ett unikt lösenord du inte använder någon annanstans.
+        </p>
+
+        {success && (
+          <div className="bg-[#e8f5ee] text-[#2D7A4F] text-sm px-4 py-3 rounded-xl mb-5">
+            ✓ Lösenordet har bytts.
+          </div>
+        )}
+
+        {fel && (
+          <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-xl mb-5">
+            {fel}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className={LABEL_CLS}>Nuvarande lösenord</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={nuvarande}
+              onChange={(e) => setNuvarande(e.target.value)}
+              className={INPUT_CLS}
+              disabled={laddar}
+              required
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Nytt lösenord</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={nyttLosenord}
+              onChange={(e) => setNyttLosenord(e.target.value)}
+              className={INPUT_CLS}
+              disabled={laddar}
+              required
+              minLength={8}
+            />
+            {nyttLosenord.length > 0 && !tillrackligtLangt && (
+              <p className="text-xs text-red-400 mt-1">Minst 8 tecken</p>
+            )}
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Bekräfta nytt lösenord</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={bekrafta}
+              onChange={(e) => setBekrafta(e.target.value)}
+              className={INPUT_CLS}
+              disabled={laddar}
+              required
+            />
+            {bekrafta.length > 0 && !matchar && (
+              <p className="text-xs text-red-400 mt-1">Lösenorden matchar inte</p>
+            )}
+          </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={!kanSpara}
+              className="bg-[#2D7A4F] text-white text-sm font-medium px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {laddar ? "Sparar..." : "Byt lösenord"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function FaktaRad({ label, varde }: { label: string; varde: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-3">
@@ -947,6 +1078,7 @@ export default function Dashboard() {
           { key: "laggUppRum", label: "Lägg upp rum" },
         ] as { key: Flik; label: string }[])
       : []),
+    { key: "konto", label: "Mitt konto" },
   ];
 
   return (
@@ -991,6 +1123,7 @@ export default function Dashboard() {
         </div>
 
         {aktivFlik === "bokningar" && <MinaBokningar bokningar={bokningar} />}
+        {aktivFlik === "konto" && session && <MittKonto session={session} />}
         {isAdmin && aktivFlik === "offerter" && <Offertforfragningar />}
         {isAdmin && aktivFlik === "hyresvardsanmalningar" && <Hyresvardsanmalningar />}
         {isAdmin && aktivFlik === "laggUppBostad" && <LaggUppBostad />}
