@@ -203,9 +203,9 @@ function BostaderContent() {
                   <Link
                     href={`/bostad/${b.id}`}
                     key={b.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer block"
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer block"
                   >
-                    <div className="h-48 relative overflow-hidden bg-[#e8f5ee]">
+                    <div className="aspect-[4/3] relative overflow-hidden bg-[#e8f5ee]">
                       {(() => {
                         const forstaRumBild = b.rum.find((r) => r.bilder.length > 0)?.bilder[0];
                         const bildUrl = b.bilder[0] ?? forstaRumBild ?? null;
@@ -215,7 +215,7 @@ function BostaderContent() {
                             alt={b.namn}
                             fill
                             className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
                         ) : (
                           <BildPlatshallare className="absolute inset-0" />

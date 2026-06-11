@@ -196,3 +196,71 @@ Allt är organiserat och redo för vidare utveckling
 - Offertformulär (/offert)
 - Admin-roll (bara du och Mahir kan lägga upp bostäder)
 
+## Dag 6
+
+### Företaget har fått namn: ReLoka AB
+- Bolag registrerat (stiftelseurkund undertecknad 27 maj 2026)
+- Styrelseledamot: Muamer Brankovic | Styrelsesuppleant: Mahir Brankovic
+- Säte: Linköping | Aktiekapital: 25 000 kr
+- Org.nr: under registrering hos Bolagsverket
+
+### Namnbyte Home for Us → ReLoka (genomfört)
+- 13 förekomster av "Home for Us" + 9 av "homeforus.se" utbytta i koden
+- Navbar-logo: "Re" (mörk) + "Loka" (grön)
+- Footer: "ReLoka AB", "© 2026 ReLoka AB", "Linköping, Sverige"
+- E-post-platshållare: info@reloka.se (ej aktiv än)
+- Org.nr visas som "under registrering"
+- Privatadresser borttagna helt från publika sajten
+- Om-oss uppdaterad: Muamer (digital/marknad) + Mahir (sälj/kund) med riktiga roller
+- JSON-LD: Organization "ReLoka AB", brand "ReLoka"
+
+### Prio 2 — Admin, bekräftelsemail, offertformulär
+
+ADMIN-ROLL:
+- Återanvänder roll-fältet i Anvandare (värde "admin")
+- requireAdmin() i lib/auth.ts — slår upp roll i DB (litar inte blint på JWT)
+- POST /api/bostader, /api/rum, /api/upload kräver nu admin (403 annars)
+- Dashboard visar admin-flikar bara för admins; vanliga användare ser bara "Mina bokningar"
+- ako.brankovic@outlook.com satt som admin via SQL i Neon
+
+BEKRÄFTELSEMAIL (Resend):
+- Installerat resend, ny hjälpare lib/email.ts
+- Två mail vid bokning: bekräftelse till kund + notis till admin
+- Två mail vid offertförfrågan: bekräftelse till kund + notis till admin
+- Fail-safe: mailfel blockerar ALDRIG att bokning/offert sparas
+- Env-variabler: RESEND_API_KEY, AVSANDAR_EMAIL (onboarding@resend.dev tillfälligt), ADMIN_EMAIL
+- OBS: onboarding@resend.dev kan bara maila till egen verifierad adress tills domänen reloka.se verifierats
+
+OFFERTFORMULÄR:
+- Ny sida /offert med fullständigt formulär (företag, orgnr, kontaktperson, email, telefon, stad, antal personer, datum, bostadstyp, meddelande)
+- Ny Prisma-modell Offertforfragan + POST/GET /api/offert
+- OffertModal behåller tel/email men har nu primär CTA "Fyll i offertformulär"
+- Sparas i DB + skickar mail
+
+DASHBOARD (admin):
+- Ny flik "Offertförfrågningar" — listar alla offertförfrågningar
+- Ny flik "Hyresvärdsanmälningar" — listar anmälningar från /hyresvardar
+- Flik-raden scrollar horisontellt på mobil
+
+### Konton & miljö
+- Resend-konto skapat med API-nyckel (production)
+- Miljövariabler tillagda i både .env.local och Vercel (alla tre miljöer)
+
+### Verifierat live på Vercel
+- Offertformulär: skickas, sparas, mail går ut (kund + admin)
+- Admin-dashboard: alla fem flikar fungerar
+- Offertförfrågan syns i dashboard
+- Admin-skydd: icke-admin (test3) ser bara "Mina bokningar"
+
+### Nästa steg (Prio 3)
+- Köpa domän reloka.se + verifiera i Resend (så mail kan gå till alla adresser)
+- Byt AVSANDAR_EMAIL till no-reply@reloka.se efter domänverifiering
+- Uppdatera riktigt org.nr när Bolagsverket registrerat
+- Riktig telefon istället för 013-XXX XX XX
+- Designfinputs: bildstorlekar/beskärning som såg "utdragna" ut tidigare
+- "Byt lösenord"-funktion i appen (slippa manuell hash i Neon)
+- Open Graph-bilder för delning på sociala medier
+- Vercel Analytics + sitemap.xml
+- Lägga upp första riktiga bostäder med bilder
+- Sociala medier (LinkedIn viktigast för B2B, + Instagram/Facebook/TikTok)
+

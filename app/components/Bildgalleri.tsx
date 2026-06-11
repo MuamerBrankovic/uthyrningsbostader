@@ -42,7 +42,7 @@ export default function Bildgalleri({ bilder, alt = "", placeholder = "🏠" }: 
 
   if (bilder.length === 0) {
     return (
-      <div className="relative h-72 bg-[#e8f5ee] rounded-2xl flex items-center justify-center text-6xl opacity-30 mb-4">
+      <div className="relative aspect-[16/10] bg-[#e8f5ee] rounded-2xl flex items-center justify-center text-6xl opacity-30 mb-4">
         {placeholder}
       </div>
     );
@@ -52,7 +52,7 @@ export default function Bildgalleri({ bilder, alt = "", placeholder = "🏠" }: 
     <div>
       {/* Main image */}
       <div
-        className="relative h-72 bg-[#e8f5ee] rounded-2xl overflow-hidden mb-4"
+        className="relative aspect-[16/10] bg-[#e8f5ee] rounded-2xl overflow-hidden mb-4"
         onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
         onTouchEnd={(e) => {
           if (touchStartX.current === null) return;
@@ -63,7 +63,7 @@ export default function Bildgalleri({ bilder, alt = "", placeholder = "🏠" }: 
         }}
       >
         <div style={{ opacity, transition: "opacity 150ms ease" }} className="absolute inset-0">
-          <Image src={bilder[index]} alt={alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 640px" />
+          <Image src={bilder[index]} alt={alt} fill quality={85} className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px" />
         </div>
 
         {bilder.length > 1 && (

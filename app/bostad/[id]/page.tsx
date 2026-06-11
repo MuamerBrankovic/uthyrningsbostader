@@ -260,14 +260,14 @@ function RumKort({ rum }: { rum: Rum }) {
           }`}
         >
           {/* ── Bild ─── */}
-          <div className="relative h-52 overflow-hidden">
+          <div className="relative aspect-[4/3] overflow-hidden bg-[#e8f5ee]">
             {rum.bilder.length > 0 ? (
               <Image
                 src={rum.bilder[0]}
                 alt={rum.namn}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             ) : (
               <BildPlatshallare className="absolute inset-0" text="Bild saknas" />
@@ -413,6 +413,7 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
             alt={bostad.namn}
             fill
             priority
+            quality={85}
             className="object-cover"
             sizes="100vw"
           />
