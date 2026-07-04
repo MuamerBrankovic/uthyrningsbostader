@@ -1,23 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OffertModal from "@/app/components/OffertModal";
-
-type Session = { userId: string; email: string; namn: string; roll: string } | null;
+import { useSession } from "@/app/components/SessionProvider";
 
 export default function Navbar() {
-  const [session, setSession] = useState<Session>(undefined as unknown as Session);
+  const { session, laddar, setSession } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [offertOpen, setOffertOpen] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then((data) => setSession(data))
-      .catch(() => setSession(null));
-  }, []);
 
   async function handleLoggaUt() {
     await fetch("/api/auth/logga-ut", { method: "POST" });
@@ -27,7 +19,6 @@ export default function Navbar() {
   }
 
   const inloggad = !!session;
-  const laddar = session === (undefined as unknown as Session);
 
   return (
     <>

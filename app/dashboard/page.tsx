@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formateraDatum } from "@/lib/datum";
+import { useSession, type Session } from "@/app/components/SessionProvider";
 
 type RumInfo = {
   id: string;
@@ -31,15 +32,30 @@ type BostadOption = {
   adress: string | null;
 };
 
-type Session = { userId: string; email: string; namn: string; roll: string } | null;
-
 type Flik =
   | "bokningar"
+  | "allaBokningar"
   | "konto"
   | "laggUppBostad"
   | "laggUppRum"
   | "offerter"
   | "hyresvardsanmalningar";
+
+type AdminBokning = {
+  id: string;
+  kund_foretag: string | null;
+  kund_orgnr: string | null;
+  kund_kontaktperson: string;
+  boende_namn: string | null;
+  email: string;
+  telefon: string | null;
+  startdatum: string;
+  slutdatum: string | null;
+  status: string;
+  avtalstyp: string;
+  created_at: string;
+  rum: RumInfo;
+};
 
 type Offert = {
   id: string;
@@ -883,6 +899,190 @@ function Hyresvardsanmalningar() {
   );
 }
 
+// ─── Flik: Alla bokningar (admin) ────────────────────────────────────────────
+
+function BokningStatusBadge({ status }: { status: string }) {
+  if (status === "bekraftad") {
+    return (
+      <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+        Bekräftad
+      </span>
+    );
+  }
+  if (status === "avbokad") {
+    return (
+      <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-500 font-medium">
+        Avbokad
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+      Förfrågan
+    </span>
+  );
+}
+
+function AllaBokningar() {
+  const [bokningar, setBokningar] = useState<AdminBokning[]>([]);
+  const [laddar, setLaddar] = useState(true);
+  const [fel, setFel] = useState("");
+  const [uppdaterarId, setUppdaterarId] = useState<string | null>(null);
+  const [slutdatumInput, setSlutdatumInput] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/bokningar?alla=1")
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          setFel(data.error ?? "Kunde inte hämta bokningar");
+          return [];
+        }
+        return r.json();
+      })
+      .then((data) => {
+        setBokningar(Array.isArray(data) ? data : []);
+        setLaddar(false);
+      })
+      .catch(() => {
+        setFel("Kunde inte hämta bokningar");
+        setLaddar(false);
+      });
+  }, []);
+
+  async function uppdatera(
+    id: string,
+    data: { status?: string; slutdatum?: string | null }
+  ) {
+    setUppdaterarId(id);
+    setFel("");
+    try {
+      const res = await fetch(`/api/bokningar/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const svar = await res.json().catch(() => null);
+      if (res.ok && svar) {
+        setBokningar((prev) => prev.map((b) => (b.id === id ? { ...b, ...svar } : b)));
+      } else {
+        setFel(svar?.error ?? "Kunde inte uppdatera bokningen");
+      }
+    } catch {
+      setFel("Kunde inte uppdatera bokningen");
+    }
+    setUppdaterarId(null);
+  }
+
+  if (laddar) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <div className="w-6 h-6 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin mx-auto" />
+      </div>
+    );
+  }
+
+  if (bokningar.length === 0 && !fel) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <p className="text-gray-400 text-sm">Inga bokningar ännu.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {fel && (
+        <div className="bg-red-50 text-red-500 rounded-2xl p-4 text-sm">{fel}</div>
+      )}
+      {bokningar.map((b) => {
+        const arbetar = uppdaterarId === b.id;
+        return (
+          <div key={b.id} className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+              <div>
+                <h3 className="font-semibold text-[#1a1a1a] text-lg">
+                  {b.rum?.namn} · {b.rum?.bostad?.namn}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {b.kund_kontaktperson}
+                  {b.kund_foretag ? ` · ${b.kund_foretag}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <BokningStatusBadge status={b.status} />
+                <span className="text-xs text-gray-400">{formateraDatum(b.created_at)}</span>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <FaktaRad label="E-post" varde={
+                <a href={`mailto:${b.email}`} className="text-[#2D7A4F] hover:underline">{b.email}</a>
+              } />
+              <FaktaRad label="Telefon" varde={
+                b.telefon ? <a href={`tel:${b.telefon}`} className="text-[#2D7A4F] hover:underline">{b.telefon}</a> : "—"
+              } />
+              <FaktaRad label="Org.nr" varde={b.kund_orgnr ?? "—"} />
+              <FaktaRad label="Boende" varde={b.boende_namn ?? "—"} />
+              <FaktaRad label="Startdatum" varde={formateraDatum(b.startdatum)} />
+              <FaktaRad label="Slutdatum" varde={b.slutdatum ? formateraDatum(b.slutdatum) : "Tills vidare"} />
+              <FaktaRad label="Hyra" varde={`${b.rum?.manadshyra?.toLocaleString()} kr/mån`} />
+              <FaktaRad label="Avtalstyp" varde={
+                b.avtalstyp === "premium" ? "Premium" : b.avtalstyp === "medlemskap" ? "Medlemskap" : "Standard"
+              } />
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-3">
+              {b.status === "forfragan" && (
+                <button
+                  onClick={() => uppdatera(b.id, { status: "bekraftad" })}
+                  disabled={arbetar}
+                  className="text-sm bg-[#2D7A4F] text-white px-5 py-2 rounded-full hover:bg-[#225f3d] transition-colors disabled:opacity-40 font-medium"
+                >
+                  {arbetar ? "Sparar..." : "Bekräfta"}
+                </button>
+              )}
+              {b.status !== "avbokad" && (
+                <button
+                  onClick={() => {
+                    if (confirm("Avboka denna bokning?")) {
+                      uppdatera(b.id, { status: "avbokad" });
+                    }
+                  }}
+                  disabled={arbetar}
+                  className="text-sm bg-white border border-gray-200 text-gray-600 px-5 py-2 rounded-full hover:border-red-300 hover:text-red-500 transition-colors disabled:opacity-40 font-medium"
+                >
+                  Avboka
+                </button>
+              )}
+              {b.status === "bekraftad" && (
+                <div className="flex items-center gap-2 ml-auto">
+                  <input
+                    type="date"
+                    value={slutdatumInput[b.id] ?? ""}
+                    onChange={(e) =>
+                      setSlutdatumInput((prev) => ({ ...prev, [b.id]: e.target.value }))
+                    }
+                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-[#2D7A4F]"
+                    disabled={arbetar}
+                  />
+                  <button
+                    onClick={() => uppdatera(b.id, { slutdatum: slutdatumInput[b.id] || null })}
+                    disabled={arbetar || !slutdatumInput[b.id]}
+                    className="text-sm bg-white border border-gray-200 text-[#2D7A4F] px-4 py-1.5 rounded-full hover:border-[#2D7A4F] transition-colors disabled:opacity-40 font-medium"
+                  >
+                    Sätt slutdatum
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Flik: Mitt konto (alla inloggade) ──────────────────────────────────────
 
 function MittKonto({ session }: { session: NonNullable<Session> }) {
@@ -1027,35 +1227,28 @@ function FaktaRad({ label, varde }: { label: string; varde: React.ReactNode }) {
 // ─── Huvud-komponent ─────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [session, setSession] = useState<Session>(null);
+  const { session, laddar: laddarSession } = useSession();
   const [bokningar, setBokningar] = useState<Bokning[]>([]);
-  const [laddar, setLaddar] = useState(true);
+  const [laddarBokningar, setLaddarBokningar] = useState(true);
   const [aktivFlik, setAktivFlik] = useState<Flik>("bokningar");
   const router = useRouter();
 
   useEffect(() => {
-    async function hamtaData() {
-      const sessionRes = await fetch("/api/auth/session");
-      const sessionData: Session = await sessionRes.json();
-
-      if (!sessionData) {
-        router.push("/logga-in");
-        return;
-      }
-
-      setSession(sessionData);
-
-      const bokRes = await fetch("/api/bokningar");
-      if (bokRes.ok) {
-        const data = await bokRes.json();
-        setBokningar(Array.isArray(data) ? data : []);
-      }
-      setLaddar(false);
+    if (laddarSession) return;
+    if (!session) {
+      router.push("/logga-in");
+      return;
     }
-    hamtaData();
-  }, []);
+    fetch("/api/bokningar")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        setBokningar(Array.isArray(data) ? data : []);
+        setLaddarBokningar(false);
+      })
+      .catch(() => setLaddarBokningar(false));
+  }, [laddarSession, session, router]);
 
-  if (laddar) {
+  if (laddarSession || !session || laddarBokningar) {
     return (
       <main className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
         <div className="text-center">
@@ -1072,6 +1265,7 @@ export default function Dashboard() {
     { key: "bokningar", label: "Mina bokningar" },
     ...(isAdmin
       ? ([
+          { key: "allaBokningar", label: "Alla bokningar" },
           { key: "offerter", label: "Offertförfrågningar" },
           { key: "hyresvardsanmalningar", label: "Hyresvärdsanmälningar" },
           { key: "laggUppBostad", label: "Lägg upp bostad" },
@@ -1124,6 +1318,7 @@ export default function Dashboard() {
 
         {aktivFlik === "bokningar" && <MinaBokningar bokningar={bokningar} />}
         {aktivFlik === "konto" && session && <MittKonto session={session} />}
+        {isAdmin && aktivFlik === "allaBokningar" && <AllaBokningar />}
         {isAdmin && aktivFlik === "offerter" && <Offertforfragningar />}
         {isAdmin && aktivFlik === "hyresvardsanmalningar" && <Hyresvardsanmalningar />}
         {isAdmin && aktivFlik === "laggUppBostad" && <LaggUppBostad />}

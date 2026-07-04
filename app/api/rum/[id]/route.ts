@@ -11,8 +11,10 @@ export async function GET(
       where: { id },
       include: {
         bostad: true,
+        // Publikt endpoint: bara bekräftade bokningar, inga kunduppgifter
         bokningar: {
-          where: { status: { not: "avbokad" } },
+          where: { status: "bekraftad" },
+          select: { id: true, startdatum: true, slutdatum: true, status: true },
           orderBy: { startdatum: "asc" },
         },
       },

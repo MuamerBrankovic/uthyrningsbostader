@@ -19,7 +19,16 @@ type Rum = {
   manadshyra: number;
   status: string;
   bilder: string[];
+  bokningar: { slutdatum: string | null }[];
 };
+
+// Ledigt = ingen aktiv bekräftad bokning (API:t returnerar bara bekräftade).
+// Rum.status-fältet i databasen uppdateras aldrig och får inte användas här.
+function arLedigt(rum: Rum): boolean {
+  return !rum.bokningar.some(
+    (b) => !b.slutdatum || new Date(b.slutdatum) > new Date()
+  );
+}
 
 type Bostad = {
   id: string;
@@ -197,7 +206,7 @@ function BostaderContent() {
               filtrerade.map((b) => {
                 const priser = b.rum.map((r) => r.manadshyra);
                 const minPris = priser.length > 0 ? Math.min(...priser) : null;
-                const ledigaRum = b.rum.filter((r) => r.status === "ledig").length;
+                const ledigaRum = b.rum.filter(arLedigt).length;
 
                 return (
                   <Link

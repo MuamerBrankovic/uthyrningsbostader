@@ -1,9 +1,33 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, requireAdmin } from "@/lib/auth";
 import { skickaBokningsmail } from "@/lib/email";
+import { rateLimit } from "@/lib/ratelimit";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // ?alla=1 — admin hämtar samtliga bokningar (för dashboard-fliken)
+    const alla = new URL(request.url).searchParams.get("alla") === "1";
+    if (alla) {
+      const auth = await requireAdmin();
+      if (!auth.ok) {
+        return Response.json({ error: auth.error }, { status: auth.status });
+      }
+      const bokningar = await prisma.bokning.findMany({
+        include: {
+          rum: {
+            select: {
+              id: true,
+              namn: true,
+              manadshyra: true,
+              bostad: { select: { id: true, namn: true, stadsdel: true } },
+            },
+          },
+        },
+        orderBy: { created_at: "desc" },
+      });
+      return Response.json(bokningar);
+    }
+
     const session = await getSession();
     if (!session) {
       return Response.json({ error: "Ej inloggad" }, { status: 401 });
@@ -39,6 +63,9 @@ type BokningBody = {
 };
 
 export async function POST(request: Request) {
+  const stoppad = rateLimit(request, "bokningar", { max: 5, fonsterMs: 10 * 60 * 1000 });
+  if (stoppad) return stoppad;
+
   try {
     const body: BokningBody = await request.json();
     const {
@@ -65,11 +92,22 @@ export async function POST(request: Request) {
       return Response.json({ error: "Ogiltigt startdatum" }, { status: 400 });
     }
 
+    const maxFramtid = new Date();
+    maxFramtid.setMonth(maxFramtid.getMonth() + 24);
+    if (startDate > maxFramtid) {
+      return Response.json(
+        { error: "Startdatum kan vara högst 24 månader fram i tiden" },
+        { status: 400 }
+      );
+    }
+
     const rum = await prisma.rum.findUnique({
       where: { id: rum_id },
       include: {
         bostad: { select: { namn: true, stadsdel: true, adress: true } },
-        bokningar: { where: { status: { not: "avbokad" } } },
+        // Endast bekräftade bokningar blockerar — en obekräftad förfrågan
+        // får inte låsa rummet för andra
+        bokningar: { where: { status: "bekraftad" } },
       },
     });
 

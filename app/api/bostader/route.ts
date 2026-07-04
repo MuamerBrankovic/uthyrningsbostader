@@ -7,8 +7,11 @@ export async function GET() {
       include: {
         rum: {
           include: {
+            // Publikt endpoint: bara bekräftade bokningar påverkar tillgänglighet,
+            // och kunduppgifter (namn/email/telefon) får aldrig läcka ut här
             bokningar: {
-              where: { status: { not: "avbokad" } },
+              where: { status: "bekraftad" },
+              select: { id: true, startdatum: true, slutdatum: true, status: true },
               orderBy: { startdatum: "desc" },
             },
           },

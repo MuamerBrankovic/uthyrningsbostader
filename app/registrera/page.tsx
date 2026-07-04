@@ -2,16 +2,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/app/components/SessionProvider";
 
 export default function Registrera() {
   const [namn, setNamn] = useState("");
   const [email, setEmail] = useState("");
   const [losenord, setLosenord] = useState("");
-  const [roll, setRoll] = useState<"hyresgast" | "uthyrare">("hyresgast");
   const [laddar, setLaddar] = useState(false);
   const [registrerad, setRegistrerad] = useState(false);
   const [fel, setFel] = useState("");
   const router = useRouter();
+  const { uppdateraSession } = useSession();
 
   async function handleRegistrera() {
     if (!namn || !email || !losenord) return;
@@ -21,10 +22,13 @@ export default function Registrera() {
     const res = await fetch("/api/auth/registrera", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ namn, email, losenord, roll }),
+      body: JSON.stringify({ namn, email, losenord }),
     });
 
     if (res.ok) {
+      // Registrering loggar in automatiskt — uppdatera den delade sessionen
+      // så navbaren visar inloggat läge direkt
+      await uppdateraSession();
       setRegistrerad(true);
       router.refresh();
     } else {
@@ -56,35 +60,12 @@ export default function Registrera() {
 
         <div className="text-center mb-10">
           <Link href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
-            Uthyrnings<span className="text-[#2D7A4F]">Bostäder</span>
+            Re<span className="text-[#2D7A4F]">Loka</span>
           </Link>
           <p className="text-gray-400 text-sm mt-2">Skapa ditt konto</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
-
-          <div className="flex gap-2 mb-6 bg-[#F8F7F4] p-1 rounded-xl">
-            <button
-              onClick={() => setRoll("hyresgast")}
-              className={`flex-1 text-sm py-2.5 rounded-lg font-medium transition-colors ${
-                roll === "hyresgast"
-                  ? "bg-white text-[#2D7A4F] shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              Jag vill hyra
-            </button>
-            <button
-              onClick={() => setRoll("uthyrare")}
-              className={`flex-1 text-sm py-2.5 rounded-lg font-medium transition-colors ${
-                roll === "uthyrare"
-                  ? "bg-white text-[#2D7A4F] shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              Jag vill hyra ut
-            </button>
-          </div>
 
           <div className="mb-5">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Fullständigt namn</label>
@@ -112,7 +93,7 @@ export default function Registrera() {
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Lösenord</label>
             <input
               type="password"
-              placeholder="Minst 6 tecken"
+              placeholder="Minst 8 tecken"
               value={losenord}
               onChange={(e) => setLosenord(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"

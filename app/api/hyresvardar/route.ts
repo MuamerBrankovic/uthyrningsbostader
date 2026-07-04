@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { rateLimit } from "@/lib/ratelimit";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -22,6 +23,9 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const stoppad = rateLimit(request, "hyresvardar", { max: 5, fonsterMs: 10 * 60 * 1000 });
+  if (stoppad) return stoppad;
+
   try {
     const body: Body = await request.json();
     const { namn, telefon, email, stad, adress, meddelande } = body;

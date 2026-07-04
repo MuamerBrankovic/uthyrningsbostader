@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import Navbar from "@/app/components/Navbar";
+import { SessionProvider } from "@/app/components/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,8 +49,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        {children}
+        <SessionProvider>
+          <Navbar />
+          {children}
+        </SessionProvider>
         <Analytics />
         <SpeedInsights />
       </body>

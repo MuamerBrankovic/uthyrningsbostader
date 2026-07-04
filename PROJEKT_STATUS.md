@@ -264,3 +264,116 @@ DASHBOARD (admin):
 - Lägga upp första riktiga bostäder med bilder
 - Sociala medier (LinkedIn viktigast för B2B, + Instagram/Facebook/TikTok)
 
+## Dag 7
+
+### Bildoptimering (sharp + WebP)
+- Installerat sharp — körs server-side i /api/upload (runtime nodejs)
+- Nya uppladdningar: resize max 1920px, konvertering till WebP quality 85
+- EXIF-rotering så mobilbilder inte hamnar liggande
+- Förstorar aldrig små bilder (withoutEnlargement)
+- Verifierat: ny rumsbild ser betydligt skarpare ut än gamla
+
+### Aspect-ratios + visuell finputs
+- Bostadskort + rumskort: aspect-[4/3] (branschstandard, konsekvent)
+- Galleri: aspect-[16/10]
+- Hero: behåller fast höjd 250px/400px
+- quality 85 på hero och galleri, sizes-attribut korrekt per kontext
+- Kontaktperson-avatar: Next.js Image istället för img
+
+### "Byt lösenord"-funktion
+- Ny API-route /api/auth/byt-losenord (verifierar nuvarande lösenord först)
+- Ny flik "Mitt konto" i dashboard (synlig för alla inloggade)
+- Kontoöversikt: e-post + roll-badge + avatar med initialer
+- Realtidsvalidering, success/fel-banners, logga ut-knapp
+- Eget starkt lösenord satt (inte längre NyttLösenord123)
+
+### Vercel Analytics + Speed Insights
+- Installerat @vercel/analytics + @vercel/speed-insights
+- Aktiverat i Vercel-dashboarden
+- Besöksstatistik + prestanda börjar samlas
+
+### SEO — sitemap + robots
+- app/sitemap.ts: statiska sidor + dynamiska bostäder/rum från DB
+- app/robots.ts: tillåter publika sidor, blockerar dashboard/api/inloggning
+- BASE_URL som lätt-bytbar konstant (för när reloka.se kommer)
+
+### Open Graph-bild
+- app/opengraph-image.tsx: 1200x630 dynamisk delningsbild
+- Design: ljus B2B-stil, "Re" mörk + "Loka" grön, tagline, geografi
+- twitter-image återanvänder samma design
+- Visas vid delning på LinkedIn/Facebook/Slack
+
+### Verifierat
+- Lösenordsbyte fungerar (testat live)
+- /sitemap.xml visar alla sidor + bostäder/rum
+- /robots.txt korrekt
+- OG-bild renderar
+- Pushat till Vercel — allt live
+
+### Kvar i Prio 3 (görs av Muamer själv, externt)
+- Köpa domän reloka.se
+- Verifiera reloka.se i Resend → byt AVSANDAR_EMAIL till no-reply@reloka.se
+- Byt BASE_URL-konstanten i sitemap.ts + robots.ts när domänen finns
+- Sociala medier-konton (LinkedIn viktigast för B2B)
+
+### Väntar på externt
+- Riktigt org.nr (Bolagsverket)
+- Riktig telefon (013-XXX XX XX)
+- Riktiga bostäder med bilder (när bostäder säkrats)
+
+### Möjliga nästa steg (Prio 4-idéer)
+- Recensioner/case-studie-sektion (när första kunden finns)
+- "Glömt lösenord"-funktion (Resend återställningsmail)
+- Bokningskalender-vy för admin
+- Fler bostadsbilder / signature-bild till OG
+
+## Dag 8
+
+### Säkerhetsfixar efter extern kodgranskning (KODGRANSKNING.md)
+
+KRITISKA HÅL TÄPPTA:
+- Registrering kan inte längre sätta roll — `roll` från request-body ignoreras,
+  alla nya konton blir "hyresgast" (tidigare kunde vem som helst POSTa roll:"admin")
+- Publika API:er läcker inte längre kunduppgifter: GET /api/bostader,
+  /api/bostader/[id] och /api/rum/[id] returnerar nu bara
+  id/startdatum/slutdatum/status på bokningar (tidigare: namn, e-post, telefon,
+  org.nr på alla kunder — öppet för vem som helst)
+- JWT_SECRET-fallback borttagen: servern vägrar starta i produktion om
+  miljövariabeln saknas (tidigare tyst fallback till publik känd sträng)
+- Rate-limiting på alla öppna POST-endpoints (logga-in, registrera, bokningar,
+  offert, hyresvardar) — ny hjälpare lib/ratelimit.ts (in-memory, per instans;
+  kan bytas mot Upstash Redis senare utan att ändra anropen)
+- Timing-skydd i logga-in: bcrypt-jämförelse körs alltid så svarstiden inte
+  avslöjar vilka e-postadresser som är registrerade
+
+BOKNINGSFLÖDET LAGAT (största funktionella bristen):
+- En obekräftad förfrågan låser INTE längre rummet — endast status "bekraftad"
+  blockerar tillgänglighet (tidigare gjorde en enda anonym förfrågan att rummet
+  visades som "Bokat tills vidare" i 10 år, utan sätt att ångra)
+- Ny API-route: PATCH /api/bokningar/[id] (admin) — bekräfta/avboka + sätt slutdatum
+- GET /api/bokningar?alla=1 (admin) — hämtar samtliga bokningar
+- Ny admin-flik "Alla bokningar" i dashboard med Bekräfta/Avboka-knappar
+  och slutdatum-fält
+- /bostader-listan räknar nu "lediga rum" från bekräftade bokningar istället
+  för det statiska rum.status-fältet (som aldrig uppdaterades)
+
+ÖVRIGT:
+- Lösenord minst 8 tecken vid registrering (tidigare 6; matchar nu byt-lösenord)
+- Roll-väljaren "Jag vill hyra / hyra ut" borttagen från registreringssidan
+- Kvarglömd "UthyrningsBostäder"-logga på registreringssidan bytt till ReLoka
+- Bokningar max 24 månader fram i tiden (tidigare obegränsat)
+- Verifierat: npm run build går igenom utan fel
+
+### VIKTIGT ATT GÖRA MANUELLT
+- Sätt befintliga riktiga bokningar till status "bekraftad" via nya admin-fliken
+  (eller SQL) — annars visas rummen som lediga eftersom "forfragan" inte längre blockerar
+- Verifiera att JWT_SECRET är satt i ALLA Vercel-miljöer (Production, Preview,
+  Development) — annars failar deployen nu (avsiktligt)
+
+### Kvar från granskningen (ej blockerande)
+- Zod-validering på alla POST-endpoints (400 istället för 500 vid fel typ av data)
+- Index i schema.prisma: Bokning(rum_id, status, email), Rum(bostad_id)
+- Transaktion/lås mot dubbelbokning (viktigt först när bokningar blir bindande)
+- Bostadstyp-fält i "Lägg upp bostad"-formuläret (alla bostäder blir "privat_rum" nu)
+- Automatiserade tester enligt testlistan i granskningen
+

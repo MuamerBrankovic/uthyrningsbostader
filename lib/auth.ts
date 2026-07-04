@@ -2,6 +2,12 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
+// I produktion måste JWT_SECRET vara satt — en tyst fallback skulle göra
+// sessions-tokens förfalskningsbara med en publikt känd nyckel.
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET saknas i miljön — vägrar starta i produktion");
+}
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-change-in-production"
 );

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/app/components/SessionProvider";
 
 export default function LoggaIn() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ export default function LoggaIn() {
   const [inloggad, setInloggad] = useState(false);
   const [fel, setFel] = useState("");
   const router = useRouter();
+  const { uppdateraSession } = useSession();
 
   async function handleLoggaIn() {
     if (!email || !losenord) return;
@@ -23,6 +25,8 @@ export default function LoggaIn() {
     });
 
     if (res.ok) {
+      // Uppdatera den delade sessionen så navbaren visar inloggat läge direkt
+      await uppdateraSession();
       setInloggad(true);
       router.refresh();
     } else {
@@ -53,7 +57,7 @@ export default function LoggaIn() {
 
         <div className="text-center mb-10">
           <Link href="/" className="text-2xl font-bold tracking-tight text-[#1a1a1a]">
-            Uthyrnings<span className="text-[#2D7A4F]">Bostäder</span>
+            Re<span className="text-[#2D7A4F]">Loka</span>
           </Link>
           <p className="text-gray-400 text-sm mt-2">Logga in på ditt konto</p>
         </div>

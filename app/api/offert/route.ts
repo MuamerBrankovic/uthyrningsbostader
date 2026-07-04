@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { skickaOffertmail } from "@/lib/email";
+import { rateLimit } from "@/lib/ratelimit";
 
 type OffertBody = {
   foretag: string;
@@ -27,6 +28,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const stoppad = rateLimit(request, "offert", { max: 5, fonsterMs: 10 * 60 * 1000 });
+  if (stoppad) return stoppad;
+
   try {
     const body: OffertBody = await request.json();
     const {

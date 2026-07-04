@@ -11,7 +11,7 @@ const getRum = cache(async (id: string) => {
     include: {
       bostad: { select: { id: true, namn: true, adress: true, stadsdel: true } },
       bokningar: {
-        where: { status: { not: "avbokad" } },
+        where: { status: "bekraftad" },
         select: { id: true, startdatum: true, slutdatum: true, status: true },
       },
     },
