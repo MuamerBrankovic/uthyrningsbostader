@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import Link from "next/link";
+import { TELEFON_VISNING, TELEFON_LANK } from "@/lib/kontakt";
 
 type Props = {
   open: boolean;
@@ -73,7 +74,7 @@ export default function OffertModal({ open, onClose }: Props) {
           </Link>
 
           <a
-            href="tel:013XXXXXX"
+            href={TELEFON_LANK}
             className="flex items-center gap-4 w-full bg-white border border-gray-200 text-[#1a1a1a] rounded-xl px-5 py-4 hover:border-[#2D7A4F] hover:bg-[#f8fdf9] transition-colors"
           >
             <span className="text-[#2D7A4F]">
@@ -83,7 +84,7 @@ export default function OffertModal({ open, onClose }: Props) {
             </span>
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Ring oss</p>
-              <p className="font-semibold">013-XXX XX XX</p>
+              <p className="font-semibold">{TELEFON_VISNING}</p>
             </div>
           </a>
 

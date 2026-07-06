@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://reloka.se"),
   title: {
     default: "ReLoka — Företagsbostäder i Linköping och Norrköping",
     template: "%s | ReLoka",

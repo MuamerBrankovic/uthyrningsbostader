@@ -120,7 +120,7 @@ Allt är organiserat och redo för vidare utveckling
 - Vercel kopplat till repo — automatisk deploy vid push
 - Miljövariabler konfigurerade i Vercel: DATABASE_URL, JWT_SECRET, BLOB_READ_WRITE_TOKEN
 - Vercel Blob-databas skapad i Stockholm-regionen (public access)
-- Live på: https://uthyrningsbostader.vercel.app
+- Live på Vercel (numera https://reloka.se)
 
 ### Databas-städning
 - Rensade testdata från E2E-tester (8 dummy-bostäder + tillhörande rum och bokningar)
@@ -189,7 +189,7 @@ Allt är organiserat och redo för vidare utveckling
 - Alla fixar testade live på mobil
 - Hamburger-menyn fungerar
 - Bottom sheet fungerar korrekt (öppnar, stänger rätt)
-- Pushat till Vercel — live på https://uthyrningsbostader.vercel.app
+- Pushat till Vercel — live (numera https://reloka.se)
 
 ### Nästa steg (Prio 2)
 - Bekräftelsemail vid bokning (Resend)
@@ -228,8 +228,8 @@ BEKRÄFTELSEMAIL (Resend):
 - Två mail vid bokning: bekräftelse till kund + notis till admin
 - Två mail vid offertförfrågan: bekräftelse till kund + notis till admin
 - Fail-safe: mailfel blockerar ALDRIG att bokning/offert sparas
-- Env-variabler: RESEND_API_KEY, AVSANDAR_EMAIL (onboarding@resend.dev tillfälligt), ADMIN_EMAIL
-- OBS: onboarding@resend.dev kan bara maila till egen verifierad adress tills domänen reloka.se verifierats
+- Env-variabler: RESEND_API_KEY, AVSANDAR_EMAIL (Resends testadress tillfälligt), ADMIN_EMAIL
+- OBS: Resends testavsändare kan bara maila till egen verifierad adress tills domänen reloka.se verifierats
 
 OFFERTFORMULÄR:
 - Ny sida /offert med fullständigt formulär (företag, orgnr, kontaktperson, email, telefon, stad, antal personer, datum, bostadstyp, meddelande)
@@ -256,7 +256,7 @@ DASHBOARD (admin):
 - Köpa domän reloka.se + verifiera i Resend (så mail kan gå till alla adresser)
 - Byt AVSANDAR_EMAIL till no-reply@reloka.se efter domänverifiering
 - Uppdatera riktigt org.nr när Bolagsverket registrerat
-- Riktig telefon istället för 013-XXX XX XX
+- Riktig telefon istället för platshållare
 - Designfinputs: bildstorlekar/beskärning som såg "utdragna" ut tidigare
 - "Byt lösenord"-funktion i appen (slippa manuell hash i Neon)
 - Open Graph-bilder för delning på sociala medier
@@ -318,7 +318,7 @@ DASHBOARD (admin):
 
 ### Väntar på externt
 - Riktigt org.nr (Bolagsverket)
-- Riktig telefon (013-XXX XX XX)
+- Riktig telefon (platshållare i lib/kontakt.ts)
 - Riktiga bostäder med bilder (när bostäder säkrats)
 
 ### Möjliga nästa steg (Prio 4-idéer)
@@ -373,7 +373,47 @@ BOKNINGSFLÖDET LAGAT (största funktionella bristen):
 ### Kvar från granskningen (ej blockerande)
 - Zod-validering på alla POST-endpoints (400 istället för 500 vid fel typ av data)
 - Index i schema.prisma: Bokning(rum_id, status, email), Rum(bostad_id)
-- Transaktion/lås mot dubbelbokning (viktigt först när bokningar blir bindande)
-- Bostadstyp-fält i "Lägg upp bostad"-formuläret (alla bostäder blir "privat_rum" nu)
 - Automatiserade tester enligt testlistan i granskningen
+
+## Dag 9
+
+### Sprint: produktionsklart inför första kunderna (reloka.se live)
+
+DOMÄN reloka.se:
+- BASE_URL bytt till https://reloka.se i app/sitemap.ts + app/robots.ts
+- metadataBase satt i app/layout.tsx (absoluta OG-/delningslänkar)
+- e2e-live.js + dokument uppdaterade från gamla vercel-URL:en
+
+MEJL:
+- lib/email.ts: fallback-avsändare no-reply@reloka.se, avsändarnamn "ReLoka <adress>"
+- Avsändare styrs fortsatt av AVSANDAR_EMAIL — MÅSTE uppdateras till
+  no-reply@reloka.se i .env.local + Vercel (alla tre miljöer)
+
+KONTAKTUPPGIFTER CENTRALISERADE (ny fil lib/kontakt.ts):
+- TELEFON_VISNING + TELEFON_LANK — platshållare <<TELEFONNUMMER_HÄR>>,
+  byts på EN plats när riktigt nummer finns (tel: i +46-format)
+- ORGNR_VISNING = "under registrering" — byts på EN plats efter Bolagsverket
+- app/page.tsx (kontakt-CTA + footer) och OffertModal använder konstanterna
+
+DUBBELBOKNINGSSKYDD:
+- POST /api/bokningar: tillgänglighetskontroll + skapande i prisma.$transaction
+  med Serializable-isolering
+- PATCH /api/bokningar/[id]: vid bekräftelse kontrolleras i samma transaktion
+  att ingen annan bekräftad bokning på rummet överlappar perioden
+  (slutdatum null = tills vidare = överlappar allt framåt) → 409 vid krock
+- Serialiseringskonflikt (P2034) vid samtidiga anrop → tydligt 409-fel
+  istället för dubbelbokning
+- Affärsregeln oförändrad: bara "bekraftad" blockerar, "forfragan" blockerar inte
+
+SMÅFIXAR:
+- Bostadstyp-dropdown i "Lägg upp bostad" (privat_rum/rum_eget_bad/hel_lagenhet),
+  valideras och sparas i POST /api/bostader
+- previewFeatures ["driverAdapters"] borttagen ur schema.prisma (numera default),
+  prisma generate kört utan varningar
+
+### ATT GÖRA MANUELLT (Muamer)
+- Sätt AVSANDAR_EMAIL=no-reply@reloka.se i .env.local OCH Vercel (Production,
+  Preview, Development)
+- Byt <<TELEFONNUMMER_HÄR>> i lib/kontakt.ts (två rader: visning + tel:-länk)
+- Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 

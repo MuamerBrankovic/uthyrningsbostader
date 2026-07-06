@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
-// Byt denna när egen domän kopplats (t.ex. "https://reloka.se")
-const BASE_URL = "https://uthyrningsbostader.vercel.app";
+const BASE_URL = "https://reloka.se";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const nu = new Date();

@@ -3,7 +3,7 @@ const { chromium } = require("playwright");
 const path = require("path");
 const fs = require("fs");
 
-const BASE = "https://uthyrningsbostader.vercel.app";
+const BASE = "https://reloka.se";
 const EMAIL = "testuser+vercel@example.com";
 const PASS  = "TestPass123";
 

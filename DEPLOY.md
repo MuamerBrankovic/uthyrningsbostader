@@ -89,7 +89,7 @@ I Vercel-projektets inställningspanel (visas under import-flödet):
 2. Vercel bygger projektet (~1–2 minuter)
 3. Vid lyckad deploy ser du:
    - Grön bock och texten **"Congratulations!"**
-   - En live-URL i formatet: `uthyrningsbostader.vercel.app` (eller liknande)
+   - En live-URL (produktionsdomän: `https://reloka.se`)
 
 Klicka på URL:en för att öppna sidan live.
 
@@ -105,10 +105,10 @@ Supabase skickar auth-redirects (efter registrering/lösenordsåterställning) t
 
 | Fält | Värde |
 |---|---|
-| **Site URL** | `https://uthyrningsbostader.vercel.app` |
-| **Redirect URLs** | `https://uthyrningsbostader.vercel.app/**` |
+| **Site URL** | `https://reloka.se` |
+| **Redirect URLs** | `https://reloka.se/**` |
 
-> Ersätt `uthyrningsbostader.vercel.app` med din faktiska Vercel-URL.  
+> Ersätt domänen med din faktiska produktions-URL vid behov.  
 > `/**` i slutet täcker alla undersidor (t.ex. `/dashboard`, `/logga-in`).
 
 4. Klicka **Save**

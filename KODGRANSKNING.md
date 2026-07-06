@@ -4,7 +4,7 @@ Detta dokument samlar de viktigaste delarna av kodbasen för en extern kodgransk
 
 **Projekt:** ReLoka (ReLoka AB) — företagsbostäder i Linköping och Norrköping
 **Stack:** Next.js 16 App Router · Prisma 7 + Neon PostgreSQL · Tailwind CSS · JWT (jose) + bcryptjs · Vercel Blob · Resend
-**Live:** https://uthyrningsbostader.vercel.app
+**Live:** https://reloka.se
 
 ---
 
@@ -307,7 +307,7 @@ function getResend(): Resend | null {
 
 function getConfig() {
   return {
-    from: process.env.AVSANDAR_EMAIL ?? "onboarding@resend.dev",
+    from: process.env.AVSANDAR_EMAIL ?? "no-reply@reloka.se",
     adminEmail: process.env.ADMIN_EMAIL ?? "",
   };
 }
@@ -3673,7 +3673,7 @@ export default function OffertModal({ open, onClose }: Props) {
           </Link>
 
           <a
-            href="tel:013XXXXXX"
+            href={TELEFON_LANK}
             className="flex items-center gap-4 w-full bg-white border border-gray-200 text-[#1a1a1a] rounded-xl px-5 py-4 hover:border-[#2D7A4F] hover:bg-[#f8fdf9] transition-colors"
           >
             <span className="text-[#2D7A4F]">
@@ -3683,7 +3683,7 @@ export default function OffertModal({ open, onClose }: Props) {
             </span>
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Ring oss</p>
-              <p className="font-semibold">013-XXX XX XX</p>
+              <p className="font-semibold">{TELEFON_VISNING}</p>
             </div>
           </a>
 
@@ -3959,7 +3959,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
 // Byt denna när egen domän kopplats (t.ex. "https://reloka.se")
-const BASE_URL = "https://uthyrningsbostader.vercel.app";
+const BASE_URL = "https://reloka.se";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const nu = new Date();
@@ -4014,7 +4014,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 import type { MetadataRoute } from "next";
 
 // Samma BASE_URL som i app/sitemap.ts — byt vid domänflytt
-const BASE_URL = "https://uthyrningsbostader.vercel.app";
+const BASE_URL = "https://reloka.se";
 
 export default function robots(): MetadataRoute.Robots {
   return {

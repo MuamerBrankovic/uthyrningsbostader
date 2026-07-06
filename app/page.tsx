@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import OffertKnapp from "@/app/components/OffertKnapp";
+import { TELEFON_VISNING, TELEFON_LANK, ORGNR_VISNING } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
   title: "ReLoka — Företagsbostäder i Linköping och Norrköping",
@@ -305,10 +306,10 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href="tel:013XXXXXX"
+              href={TELEFON_LANK}
               className="inline-block bg-white text-[#2D7A4F] text-sm font-semibold px-8 py-3.5 rounded-full hover:bg-gray-50 transition-colors"
             >
-              013-XXX XX XX
+              {TELEFON_VISNING}
             </a>
             <a
               href="mailto:info@reloka.se"
@@ -332,7 +333,7 @@ export default function Home() {
               <p className="text-sm max-w-xs leading-relaxed">
                 Möblerade företagsbostäder med personlig service. Vi gör boende-logistiken enkel för HR och konsultbolag.
               </p>
-              <p className="text-xs text-gray-600 mt-3">Org.nr: under registrering</p>
+              <p className="text-xs text-gray-600 mt-3">Org.nr: {ORGNR_VISNING}</p>
               <p className="text-xs text-gray-600">Linköping, Sverige</p>
             </div>
             <div className="flex gap-16 text-sm">

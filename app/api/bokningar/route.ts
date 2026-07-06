@@ -1,7 +1,9 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession, requireAdmin } from "@/lib/auth";
 import { skickaBokningsmail } from "@/lib/email";
 import { rateLimit } from "@/lib/ratelimit";
+import { ApiFel } from "@/lib/apifel";
 
 export async function GET(request: Request) {
   try {
@@ -101,46 +103,70 @@ export async function POST(request: Request) {
       );
     }
 
-    const rum = await prisma.rum.findUnique({
-      where: { id: rum_id },
-      include: {
-        bostad: { select: { namn: true, stadsdel: true, adress: true } },
-        // Endast bekräftade bokningar blockerar — en obekräftad förfrågan
-        // får inte låsa rummet för andra
-        bokningar: { where: { status: "bekraftad" } },
-      },
-    });
+    // Tillgänglighetskontroll + skapande sker atomärt (Serializable) så att
+    // två samtidiga anrop inte kan smyga förbi varandras kontroller
+    let resultat: {
+      bokning: Awaited<ReturnType<typeof prisma.bokning.create>>;
+      rum: { namn: string; manadshyra: number; bostad: { namn: string; stadsdel: string | null; adress: string | null } };
+    };
+    try {
+      resultat = await prisma.$transaction(
+        async (tx) => {
+          const rum = await tx.rum.findUnique({
+            where: { id: rum_id },
+            include: {
+              bostad: { select: { namn: true, stadsdel: true, adress: true } },
+              // Endast bekräftade bokningar blockerar — en obekräftad förfrågan
+              // får inte låsa rummet för andra
+              bokningar: { where: { status: "bekraftad" } },
+            },
+          });
 
-    if (!rum) {
-      return Response.json({ error: "Rum hittades inte" }, { status: 404 });
-    }
+          if (!rum) throw new ApiFel(404, "Rum hittades inte");
 
-    const forstaLediga = getForstaLedigaDatum(rum);
-    if (startDate < forstaLediga) {
-      const formatted = forstaLediga.toLocaleDateString("sv-SE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      return Response.json(
-        { error: `Startdatum måste vara från och med ${formatted}` },
-        { status: 400 }
+          const forstaLediga = getForstaLedigaDatum(rum);
+          if (startDate < forstaLediga) {
+            const formatted = forstaLediga.toLocaleDateString("sv-SE", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
+            throw new ApiFel(400, `Startdatum måste vara från och med ${formatted}`);
+          }
+
+          const bokning = await tx.bokning.create({
+            data: {
+              rum_id,
+              kund_foretag: kund_foretag ?? null,
+              kund_orgnr: kund_orgnr ?? null,
+              kund_kontaktperson,
+              boende_namn: boende_namn ?? null,
+              email,
+              telefon: telefon ?? null,
+              startdatum: startDate,
+              avtalstyp: avtalstyp ?? "standard",
+            },
+          });
+
+          return { bokning, rum };
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       );
+    } catch (err) {
+      if (err instanceof ApiFel) {
+        return Response.json({ error: err.message }, { status: err.status });
+      }
+      // P2034 = serialiseringskonflikt: ett samtidigt anrop hann före
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") {
+        return Response.json(
+          { error: "Rummet är inte längre tillgängligt för valt datum. Försök igen." },
+          { status: 409 }
+        );
+      }
+      throw err;
     }
 
-    const bokning = await prisma.bokning.create({
-      data: {
-        rum_id,
-        kund_foretag: kund_foretag ?? null,
-        kund_orgnr: kund_orgnr ?? null,
-        kund_kontaktperson,
-        boende_namn: boende_namn ?? null,
-        email,
-        telefon: telefon ?? null,
-        startdatum: startDate,
-        avtalstyp: avtalstyp ?? "standard",
-      },
-    });
+    const { bokning, rum } = resultat;
 
     // Bekräftelsemail — får ALDRIG blockera success-svaret
     skickaBokningsmail(

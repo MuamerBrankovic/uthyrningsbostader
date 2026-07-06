@@ -310,6 +310,7 @@ function LaggUppBostad() {
   const [namn, setNamn] = useState("");
   const [adress, setAdress] = useState("");
   const [stadsdel, setStadsdel] = useState("");
+  const [bostadstyp, setBostadstyp] = useState("privat_rum");
   const [beskrivning, setBeskrivning] = useState("");
   const [deladeUtrymmen, setDeladeUtrymmen] = useState("");
   const [inkluderat, setInkluderat] = useState("");
@@ -334,6 +335,7 @@ function LaggUppBostad() {
         namn,
         adress: adress || null,
         stadsdel: stadsdel || null,
+        bostadstyp,
         beskrivning: beskrivning || null,
         bilder: bildUrls,
         delade_utrymmen: parseList(deladeUtrymmen),
@@ -350,6 +352,7 @@ function LaggUppBostad() {
       setNamn("");
       setAdress("");
       setStadsdel("");
+      setBostadstyp("privat_rum");
       setBeskrivning("");
       setDeladeUtrymmen("");
       setInkluderat("");
@@ -412,7 +415,7 @@ function LaggUppBostad() {
             className={INPUT_CLS}
           />
         </div>
-        <div className="md:col-span-2">
+        <div>
           <label className={LABEL_CLS}>Adress</label>
           <input
             type="text"
@@ -421,6 +424,18 @@ function LaggUppBostad() {
             onChange={(e) => setAdress(e.target.value)}
             className={INPUT_CLS}
           />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Bostadstyp</label>
+          <select
+            value={bostadstyp}
+            onChange={(e) => setBostadstyp(e.target.value)}
+            className={INPUT_CLS}
+          >
+            <option value="privat_rum">Privat rum</option>
+            <option value="rum_eget_bad">Rum med eget bad</option>
+            <option value="hel_lagenhet">Hel lägenhet</option>
+          </select>
         </div>
       </div>
 

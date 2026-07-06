@@ -50,8 +50,10 @@ function getResend(): Resend | null {
 }
 
 function getConfig() {
+  // AVSANDAR_EMAIL kan vara en ren adress — då läggs avsändarnamnet på här
+  const avsandare = process.env.AVSANDAR_EMAIL ?? "no-reply@reloka.se";
   return {
-    from: process.env.AVSANDAR_EMAIL ?? "onboarding@resend.dev",
+    from: avsandare.includes("<") ? avsandare : `ReLoka <${avsandare}>`,
     adminEmail: process.env.ADMIN_EMAIL ?? "",
   };
 }
