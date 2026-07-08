@@ -116,7 +116,9 @@ export default function Registrera() {
 
           <p className="text-xs text-gray-400 text-center mt-4">
             Genom att registrera dig godkänner du våra{" "}
-            <a href="#" className="text-[#2D7A4F] hover:underline">användarvillkor</a>
+            <Link href="/villkor" className="text-[#2D7A4F] hover:underline">användarvillkor</Link>{" "}
+            och vår{" "}
+            <Link href="/integritetspolicy" className="text-[#2D7A4F] hover:underline">integritetspolicy</Link>
           </p>
         </div>
 

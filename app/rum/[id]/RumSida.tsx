@@ -5,6 +5,7 @@ import Image from "next/image";
 import Bildgalleri from "@/app/components/Bildgalleri";
 import { formateraDatum, formateraKortDatum } from "@/lib/datum";
 import { ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
+import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
 
 type Bokning = {
   id: string;
@@ -145,8 +146,16 @@ function BokningsModal({
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Telefon är valfritt — men om det fylls i måste det vara giltigt
+  const telefonOgiltigt =
+    form.telefon.trim() !== "" && !arGiltigtTelefonnummer(form.telefon);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (telefonOgiltigt) {
+      setFel(TELEFON_FELTEXT);
+      return;
+    }
     setSkickar(true);
     setFel("");
 
@@ -235,9 +244,12 @@ function BokningsModal({
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
               Telefon <span className="normal-case font-normal">(valfritt)</span>
             </label>
-            <input type="tel" placeholder="070-000 00 00" value={form.telefon}
+            <input type="tel" inputMode="tel" placeholder="070-000 00 00" value={form.telefon}
               onChange={(e) => update("telefon", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
+            {telefonOgiltigt && (
+              <p className="text-xs text-red-400 mt-1">{TELEFON_FELTEXT}</p>
+            )}
           </div>
 
           <div>
@@ -298,7 +310,10 @@ function BokningsModal({
             >
               {skickar ? "Skickar förfrågan..." : "Skicka bokningsförfrågan"}
             </button>
-            <p className="text-xs text-gray-400 text-center mt-3">Ingen betalning krävs ännu</p>
+            <p className="text-xs text-gray-400 text-center mt-3">
+              Ingen betalning krävs ännu · Uppgifterna behandlas enligt vår{" "}
+              <Link href="/integritetspolicy" className="text-[#2D7A4F] hover:underline">integritetspolicy</Link>
+            </p>
           </div>
         </form>
       </div>

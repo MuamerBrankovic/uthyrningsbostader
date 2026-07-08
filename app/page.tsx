@@ -349,6 +349,11 @@ export default function Home() {
                 <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
                 <a href="mailto:info@reloka.se" className="hover:text-white transition-colors">Kontakt</a>
               </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-white font-medium mb-1 text-xs uppercase tracking-wider">Juridiskt</span>
+                <Link href="/integritetspolicy" className="hover:text-white transition-colors">Integritetspolicy</Link>
+                <Link href="/villkor" className="hover:text-white transition-colors">Användarvillkor</Link>
+              </div>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-6 text-xs text-gray-600 flex flex-col sm:flex-row justify-between gap-2">

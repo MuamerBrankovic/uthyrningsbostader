@@ -55,6 +55,10 @@ model Bokning {
   id                 String   @id @default(uuid())
   rum_id             String
   rum                Rum      @relation(fields: [rum_id], references: [id], onDelete: Cascade)
+  // Sätts när en inloggad användare bokar — "Mina bokningar" filtrerar på
+  // denna (aldrig på e-post, som går att kapa via overifierad registrering)
+  anvandare_id       String?
+  anvandare          Anvandare? @relation(fields: [anvandare_id], references: [id], onDelete: SetNull)
   kund_foretag       String?
   kund_orgnr         String?
   kund_kontaktperson String
@@ -66,6 +70,8 @@ model Bokning {
   status             String   @default("forfragan")
   avtalstyp          String   @default("standard")
   created_at         DateTime @default(now())
+
+  @@index([anvandare_id])
 }
 
 model Anvandare {
@@ -74,6 +80,7 @@ model Anvandare {
   losenord     String
   namn         String
   roll         String   @default("hyresgast")
+  bokningar    Bokning[]
   created_at   DateTime @default(now())
 }
 

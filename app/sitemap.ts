@@ -13,6 +13,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/hyresvardar`, lastModified: nu, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/om-oss`,      lastModified: nu, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/faq`,         lastModified: nu, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/integritetspolicy`, lastModified: nu, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/villkor`,     lastModified: nu, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   let bostadEntries: MetadataRoute.Sitemap = [];

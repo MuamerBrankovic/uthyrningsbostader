@@ -4,6 +4,7 @@ import { getSession, requireAdmin } from "@/lib/auth";
 import { skickaBokningsmail } from "@/lib/email";
 import { rateLimit } from "@/lib/ratelimit";
 import { ApiFel } from "@/lib/apifel";
+import { lasJson, validera, bokningSchema } from "@/lib/validering";
 
 export async function GET(request: Request) {
   try {
@@ -35,8 +36,9 @@ export async function GET(request: Request) {
       return Response.json({ error: "Ej inloggad" }, { status: 401 });
     }
 
+    // Filtrera på kontokoppling — aldrig på e-post, som inte är verifierad
     const bokningar = await prisma.bokning.findMany({
-      where: { email: session.email },
+      where: { anvandare_id: session.userId },
       include: {
         rum: {
           include: { bostad: true },
@@ -52,24 +54,17 @@ export async function GET(request: Request) {
   }
 }
 
-type BokningBody = {
-  rum_id: string;
-  kund_foretag?: string;
-  kund_orgnr?: string;
-  kund_kontaktperson: string;
-  boende_namn?: string;
-  email: string;
-  telefon?: string;
-  startdatum: string;
-  avtalstyp?: string;
-};
-
 export async function POST(request: Request) {
   const stoppad = rateLimit(request, "bokningar", { max: 5, fonsterMs: 10 * 60 * 1000 });
   if (stoppad) return stoppad;
 
   try {
-    const body: BokningBody = await request.json();
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
+
+    const valid = validera(bokningSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
     const {
       rum_id,
       kund_foretag,
@@ -80,14 +75,7 @@ export async function POST(request: Request) {
       telefon,
       startdatum,
       avtalstyp,
-    } = body;
-
-    if (!rum_id || !kund_kontaktperson || !email || !startdatum) {
-      return Response.json(
-        { error: "rum_id, kund_kontaktperson, email och startdatum krävs" },
-        { status: 400 }
-      );
-    }
+    } = valid.data;
 
     const startDate = new Date(startdatum);
     if (isNaN(startDate.getTime())) {
@@ -109,9 +97,22 @@ export async function POST(request: Request) {
       bokning: Awaited<ReturnType<typeof prisma.bokning.create>>;
       rum: { namn: string; manadshyra: number; bostad: { namn: string; stadsdel: string | null; adress: string | null } };
     };
+    // Koppla bokningen till kontot om kunden är inloggad (anonym bokning
+    // fungerar precis som tidigare, med anvandare_id = null)
+    const session = await getSession();
+
     try {
       resultat = await prisma.$transaction(
         async (tx) => {
+          let anvandareId: string | null = null;
+          if (session) {
+            const konto = await tx.anvandare.findUnique({
+              where: { id: session.userId },
+              select: { id: true },
+            });
+            anvandareId = konto?.id ?? null;
+          }
+
           const rum = await tx.rum.findUnique({
             where: { id: rum_id },
             include: {
@@ -137,6 +138,7 @@ export async function POST(request: Request) {
           const bokning = await tx.bokning.create({
             data: {
               rum_id,
+              anvandare_id: anvandareId,
               kund_foretag: kund_foretag ?? null,
               kund_orgnr: kund_orgnr ?? null,
               kund_kontaktperson,

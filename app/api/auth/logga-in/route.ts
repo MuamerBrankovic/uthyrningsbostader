@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
+import { lasJson, validera, loggaInSchema } from "@/lib/validering";
 
 // Jämförs mot när e-posten inte finns, så att svarstiden inte avslöjar
 // vilka adresser som är registrerade
@@ -12,12 +13,13 @@ export async function POST(request: Request) {
   if (stoppad) return stoppad;
 
   try {
-    const body = await request.json();
-    const { email, losenord } = body;
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
 
-    if (typeof email !== "string" || typeof losenord !== "string" || !email || !losenord) {
-      return Response.json({ error: "E-post och lösenord krävs" }, { status: 400 });
-    }
+    const valid = validera(loggaInSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
+    const { email, losenord } = valid.data;
 
     const user = await prisma.anvandare.findUnique({ where: { email } });
     const match = await bcrypt.compare(losenord, user?.losenord ?? DUMMY_HASH);

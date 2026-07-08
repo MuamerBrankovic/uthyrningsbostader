@@ -115,6 +115,14 @@ function escapeHtml(s: string | null | undefined): string {
     .replace(/"/g, "&quot;");
 }
 
+// ─── Text-hjälpare (plain text-version krävs för god leveranssäkerhet) ──────
+
+function visa(s: string | null | undefined): string {
+  return s && String(s).trim() ? String(s) : "—";
+}
+
+const TEXT_FOT = "\nReLoka AB · Linköping, Sverige\ninfo@reloka.se";
+
 // ─── Bekräftelsemail: bokning ───────────────────────────────────────────────
 
 export async function skickaBokningsmail(
@@ -188,13 +196,52 @@ export async function skickaBokningsmail(
     </table>
   `);
 
+  const kundText = [
+    `Tack ${bokning.kund_kontaktperson}!`,
+    "",
+    "Vi har tagit emot din förfrågan. Vi återkommer normalt inom 3 timmar på vardagar med ett besked om tillgänglighet och nästa steg.",
+    "",
+    "Sammanfattning",
+    `Rum: ${rum.namn}`,
+    `Bostad: ${bostad.namn}`,
+    `Plats: ${visa(plats)}`,
+    `Hyra: ${rum.manadshyra.toLocaleString("sv-SE")} kr/mån`,
+    `Startdatum: ${startdatum}`,
+    `Avtalstyp: ${avtalstypLabel(bokning.avtalstyp)}`,
+    "",
+    "Frågor? Kontakta oss direkt: info@reloka.se",
+    TEXT_FOT,
+  ].join("\n");
+
+  const adminText = [
+    `Ny bokningsförfrågan från ${bokning.kund_kontaktperson}${bokning.kund_foretag ? ` (${bokning.kund_foretag})` : ""}`,
+    "",
+    `Företag: ${visa(bokning.kund_foretag)}`,
+    `Org.nr: ${visa(bokning.kund_orgnr)}`,
+    `Kontaktperson: ${bokning.kund_kontaktperson}`,
+    `Boende (namn): ${visa(bokning.boende_namn)}`,
+    `E-post: ${bokning.email}`,
+    `Telefon: ${visa(bokning.telefon)}`,
+    `Rum: ${rum.namn}`,
+    `Bostad: ${bostad.namn}`,
+    `Plats: ${visa(plats)}`,
+    `Hyra: ${rum.manadshyra.toLocaleString("sv-SE")} kr/mån`,
+    `Startdatum: ${startdatum}`,
+    `Avtalstyp: ${avtalstypLabel(bokning.avtalstyp)}`,
+    `Bokning-ID: ${bokning.id}`,
+    TEXT_FOT,
+  ].join("\n");
+
   try {
     const tasks: Promise<unknown>[] = [
       resend.emails.send({
         from,
         to: bokning.email,
+        // Reply-to till bemannad inkorg — svar på no-reply ska inte studsa
+        ...(adminEmail ? { replyTo: adminEmail } : {}),
         subject: "Vi har tagit emot din förfrågan — ReLoka",
         html: kundHtml,
+        text: kundText,
       }),
     ];
     if (adminEmail) {
@@ -202,8 +249,11 @@ export async function skickaBokningsmail(
         resend.emails.send({
           from,
           to: adminEmail,
+          // Svar på notisen går direkt till kunden
+          replyTo: bokning.email,
           subject: `Ny bokningsförfrågan från ${bokning.kund_kontaktperson}`,
           html: adminHtml,
+          text: adminText,
         })
       );
     }
@@ -282,13 +332,49 @@ export async function skickaOffertmail(
     </table>
   `);
 
+  const kundText = [
+    `Tack ${offert.kontaktperson}!`,
+    "",
+    `Vi har tagit emot er offertförfrågan för ${offert.foretag}. Vi återkommer normalt inom 3 timmar på vardagar med ett skräddarsytt förslag.`,
+    "",
+    "Er förfrågan",
+    `Företag: ${offert.foretag}`,
+    `Stad: ${offert.stad}`,
+    `Antal personer: ${offert.antal_personer ? String(offert.antal_personer) : "—"}`,
+    `Önskad inflyttning: ${inflyttning ?? "—"}`,
+    `Bostadstyp: ${bostadstypLabel(offert.bostadstyp)}`,
+    "",
+    "Brådskande? Kontakta oss direkt: info@reloka.se",
+    TEXT_FOT,
+  ].join("\n");
+
+  const adminText = [
+    `Ny offertförfrågan från ${offert.kontaktperson} (${offert.foretag})`,
+    "",
+    `Företag: ${offert.foretag}`,
+    `Org.nr: ${visa(offert.orgnr)}`,
+    `Kontaktperson: ${offert.kontaktperson}`,
+    `E-post: ${offert.email}`,
+    `Telefon: ${offert.telefon}`,
+    `Stad: ${offert.stad}`,
+    `Antal personer: ${offert.antal_personer ? String(offert.antal_personer) : "—"}`,
+    `Inflyttning: ${inflyttning ?? "—"}`,
+    `Bostadstyp: ${bostadstypLabel(offert.bostadstyp)}`,
+    `Meddelande: ${visa(offert.meddelande)}`,
+    `Offert-ID: ${offert.id}`,
+    TEXT_FOT,
+  ].join("\n");
+
   try {
     const tasks: Promise<unknown>[] = [
       resend.emails.send({
         from,
         to: offert.email,
+        // Reply-to till bemannad inkorg — svar på no-reply ska inte studsa
+        ...(adminEmail ? { replyTo: adminEmail } : {}),
         subject: "Vi har tagit emot er offertförfrågan — ReLoka",
         html: kundHtml,
+        text: kundText,
       }),
     ];
     if (adminEmail) {
@@ -296,8 +382,11 @@ export async function skickaOffertmail(
         resend.emails.send({
           from,
           to: adminEmail,
+          // Svar på notisen går direkt till kunden
+          replyTo: offert.email,
           subject: `Ny offertförfrågan från ${offert.kontaktperson} (${offert.foretag})`,
           html: adminHtml,
+          text: adminText,
         })
       );
     }

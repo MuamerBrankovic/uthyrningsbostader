@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
+import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
 
 const INPUT_CLS =
   "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white";
@@ -31,8 +32,17 @@ export default function OffertSida() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Telefon är obligatoriskt — visa fel så fort något ogiltigt skrivits
+  const telefonOgiltigt =
+    form.telefon.trim() !== "" && !arGiltigtTelefonnummer(form.telefon);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!arGiltigtTelefonnummer(form.telefon)) {
+      setFel(TELEFON_FELTEXT);
+      setStatus("error");
+      return;
+    }
     setStatus("sending");
     setFel("");
     try {
@@ -190,6 +200,7 @@ export default function OffertSida() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="tel"
                   required
                   value={form.telefon}
                   onChange={(e) => update("telefon", e.target.value)}
@@ -197,6 +208,9 @@ export default function OffertSida() {
                   className={INPUT_CLS}
                   disabled={sending}
                 />
+                {telefonOgiltigt && (
+                  <p className="text-xs text-red-400 mt-1">{TELEFON_FELTEXT}</p>
+                )}
               </div>
             </div>
 
@@ -279,8 +293,9 @@ export default function OffertSida() {
 
             <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-6 border-t border-gray-100">
               <p className="text-xs text-gray-400 text-center sm:text-left">
-                Genom att skicka godkänner du att vi kontaktar er.<br className="hidden sm:block" />
-                Inga förpliktelser.
+                Genom att skicka godkänner du att vi kontaktar er. Inga förpliktelser.<br className="hidden sm:block" />
+                Vi behandlar uppgifterna enligt vår{" "}
+                <Link href="/integritetspolicy" className="text-[#2D7A4F] hover:underline">integritetspolicy</Link>.
               </p>
               <button
                 type="submit"

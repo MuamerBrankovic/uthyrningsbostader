@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import Link from "next/link";
+import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
 
 export default function Hyresvardar() {
   const [form, setForm] = useState({
@@ -17,8 +19,13 @@ export default function Hyresvardar() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Telefon är valfritt här — men om det fylls i måste det vara giltigt
+  const telefonOgiltigt =
+    form.telefon.trim() !== "" && !arGiltigtTelefonnummer(form.telefon);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (telefonOgiltigt) return;
     setStatus("sending");
     try {
       const res = await fetch("/api/hyresvardar", {
@@ -156,11 +163,15 @@ export default function Hyresvardar() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="tel"
                   value={form.telefon}
                   onChange={(e) => update("telefon", e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
                   placeholder="07X-XXX XX XX"
                 />
+                {telefonOgiltigt && (
+                  <p className="text-xs text-red-400 mt-1">{TELEFON_FELTEXT}</p>
+                )}
               </div>
             </div>
 
@@ -231,6 +242,11 @@ export default function Hyresvardar() {
             >
               {status === "sending" ? "Skickar..." : "Skicka anmälan"}
             </button>
+
+            <p className="text-xs text-gray-400 text-center">
+              Vi behandlar dina uppgifter enligt vår{" "}
+              <Link href="/integritetspolicy" className="text-[#2D7A4F] hover:underline">integritetspolicy</Link>.
+            </p>
           </form>
         )}
       </section>

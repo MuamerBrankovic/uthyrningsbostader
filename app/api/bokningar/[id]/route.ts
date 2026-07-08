@@ -2,14 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { ApiFel } from "@/lib/apifel";
-
-const TILLATNA_STATUS = ["forfragan", "bekraftad", "avbokad"] as const;
-type BokningStatus = (typeof TILLATNA_STATUS)[number];
-
-type Body = {
-  status?: string;
-  slutdatum?: string | null;
-};
+import { lasJson, validera, bokningPatchSchema } from "@/lib/validering";
 
 export async function PATCH(
   request: Request,
@@ -23,42 +16,28 @@ export async function PATCH(
 
     const { id } = await params;
 
-    let body: Body;
-    try {
-      body = await request.json();
-    } catch {
-      return Response.json({ error: "Ogiltig JSON" }, { status: 400 });
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
+
+    const valid = validera(bokningPatchSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
+    const data: { status?: "forfragan" | "bekraftad" | "avbokad"; slutdatum?: Date | null } = {};
+
+    if (valid.data.status !== undefined) {
+      data.status = valid.data.status;
     }
 
-    const data: { status?: BokningStatus; slutdatum?: Date | null } = {};
-
-    if (body.status !== undefined) {
-      if (!TILLATNA_STATUS.includes(body.status as BokningStatus)) {
-        return Response.json(
-          { error: `status måste vara en av: ${TILLATNA_STATUS.join(", ")}` },
-          { status: 400 }
-        );
-      }
-      data.status = body.status as BokningStatus;
-    }
-
-    if (body.slutdatum !== undefined) {
-      if (body.slutdatum === null || body.slutdatum === "") {
+    if (valid.data.slutdatum !== undefined) {
+      if (valid.data.slutdatum === null || valid.data.slutdatum === "") {
         data.slutdatum = null;
       } else {
-        const d = new Date(body.slutdatum);
+        const d = new Date(valid.data.slutdatum);
         if (isNaN(d.getTime())) {
           return Response.json({ error: "Ogiltigt slutdatum" }, { status: 400 });
         }
         data.slutdatum = d;
       }
-    }
-
-    if (Object.keys(data).length === 0) {
-      return Response.json(
-        { error: "Ange status och/eller slutdatum" },
-        { status: 400 }
-      );
     }
 
     // Kontroll + uppdatering sker atomärt (Serializable) så att två admins

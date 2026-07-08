@@ -2,19 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { skickaOffertmail } from "@/lib/email";
 import { rateLimit } from "@/lib/ratelimit";
-
-type OffertBody = {
-  foretag: string;
-  orgnr?: string;
-  kontaktperson: string;
-  email: string;
-  telefon: string;
-  stad: string;
-  antal_personer?: number | string;
-  inflyttning?: string;
-  bostadstyp?: string;
-  meddelande?: string;
-};
+import { lasJson, validera, offertSchema } from "@/lib/validering";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -32,7 +20,12 @@ export async function POST(request: Request) {
   if (stoppad) return stoppad;
 
   try {
-    const body: OffertBody = await request.json();
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
+
+    const valid = validera(offertSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
     const {
       foretag,
       orgnr,
@@ -44,25 +37,12 @@ export async function POST(request: Request) {
       inflyttning,
       bostadstyp,
       meddelande,
-    } = body;
-
-    if (!foretag || !kontaktperson || !email || !telefon || !stad) {
-      return Response.json(
-        { error: "foretag, kontaktperson, email, telefon och stad krävs" },
-        { status: 400 }
-      );
-    }
+    } = valid.data;
 
     let inflyttningDate: Date | null = null;
     if (inflyttning) {
       const d = new Date(inflyttning);
       if (!isNaN(d.getTime())) inflyttningDate = d;
-    }
-
-    let antalPersoner: number | null = null;
-    if (antal_personer != null && antal_personer !== "") {
-      const n = Number(antal_personer);
-      if (Number.isFinite(n) && n > 0) antalPersoner = Math.floor(n);
     }
 
     const offert = await prisma.offertforfragan.create({
@@ -73,7 +53,7 @@ export async function POST(request: Request) {
         email,
         telefon,
         stad,
-        antal_personer: antalPersoner,
+        antal_personer: antal_personer ?? null,
         inflyttning: inflyttningDate,
         bostadstyp: bostadstyp ?? null,
         meddelande: meddelande ?? null,

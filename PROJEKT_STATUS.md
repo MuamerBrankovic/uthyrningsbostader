@@ -415,5 +415,76 @@ SMÅFIXAR:
 - Sätt AVSANDAR_EMAIL=no-reply@reloka.se i .env.local OCH Vercel (Production,
   Preview, Development)
 - Byt <<TELEFONNUMMER_HÄR>> i lib/kontakt.ts (två rader: visning + tel:-länk)
+  [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
+
+## Dag 11
+
+### Grupp 1 från förbättringsplanen (efter godkänd prioritering)
+
+BOKNING KOPPLAD TILL KONTO (stänger "Mina bokningar"-läckan):
+- Ny migration: nullable kolumn anvandare_id på Bokning + relation till
+  Anvandare (onDelete: SetNull) + index. Migrationen är applicerad på Neon.
+- POST /api/bokningar sätter anvandare_id när en inloggad användare bokar
+  (kontot verifieras i transaktionen). Anonym bokning fungerar exakt som förut.
+- GET /api/bokningar ("Mina bokningar") filtrerar nu på anvandare_id —
+  ALDRIG på e-post (e-post är overifierad och gick att kapa genom att
+  registrera ett konto med någon annans adress)
+- OBS: bokningar skapade FÖRE denna ändring har anvandare_id = null och
+  visas inte under "Mina bokningar" (admin ser allt via "Alla bokningar")
+
+ZOD-VALIDERING PÅ ALLA SKRIVANDE ENDPOINTS (npm-paket zod installerat):
+- Ny fil lib/validering.ts: scheman + validera()-hjälpare + lasJson()
+  (trasig JSON ger nu 400 istället för 500 överallt, även POST /api/bostader
+  som helt saknade try/catch)
+- Endpoints: registrera, logga-in, byt-losenord, bokningar (POST),
+  bokningar/[id] (PATCH), offert, hyresvardar, bostader, rum
+- Typer, e-postformat, telefonregex (återanvänder lib/telefon.ts), enums för
+  status/avtalstyp/bostadstyp, maxlängder på alla textfält (skyddar mot
+  megabyte-skräp), coerce av tal (kvm, manadshyra, antal_personer)
+- E-post normaliseras till gemener vid registrering OCH inloggning
+  (verifierat mot databasen: 0 befintliga konton med versaler → säkert)
+- Svenska felmeddelanden som visas direkt i formulären
+
+INTEGRITETSPOLICY + ANVÄNDARVILLKOR:
+- Nya sidor /integritetspolicy och /villkor (statiskt renderade, i designsystemet)
+- Policyn täcker: ansvarig (ReLoka AB), vilka uppgifter, ändamål/rättslig
+  grund, lagringstider (förfrågningar 12 mån, avtalsdata 7 år), underbiträden
+  (Vercel/Neon/Resend), cookies (endast nödvändig inloggningscookie — ingen
+  banner behövs), rättigheter + IMY
+- Footer: ny kolumn "Juridiskt" med båda länkarna
+- Döda "användarvillkor"-länken på /registrera fixad (pekade på "#")
+- Integritetspolicy-länk i offertformuläret, hyresvärdsformuläret och
+  bokningsmodalen
+- /integritetspolicy + /villkor tillagda i sitemap
+- OBS: policytexten bör läsas av någon med juridikkoll innan ni skalar
+
+### ATT GÖRA MANUELLT (Muamer) — kvarstår/nytt
+- Signera/acceptera DPA hos Vercel, Neon och Resend (finns i deras dashboards)
+- Verifiera AVSANDAR_EMAIL + ADMIN_EMAIL i Vercel
+- Läs igenom policy- och villkorstexterna innan deploy
+
+## Dag 10
+
+### Telefonvalidering i alla formulär
+- Ny delad validerare lib/telefon.ts: regex ^[+]?[\d\s-]{7,15}$ — siffror,
+  mellanslag, bindestreck, valfritt inledande +
+- Klientvalidering med inline-felet "Ange ett giltigt telefonnummer" och
+  blockerad submit i: /offert (obligatoriskt fält), /hyresvardar (valfritt —
+  valideras bara om ifyllt), bokningsmodalen på /rum/[id] (valfritt)
+- inputMode="tel" satt så mobiler visar siffertangentbord
+- Servervalidering (lita aldrig på klienten) i POST /api/offert,
+  /api/hyresvardar och /api/bokningar → 400 vid ogiltigt nummer
+- Admin-fältet kontaktperson-telefon i dashboarden lämnades utan validering
+  (admin-internt, valfritt)
+
+### E-postleverans (minska skräppostrisk) — lib/email.ts
+- Reply-to satt: kundmail → ADMIN_EMAIL (svar hamnar i riktig inkorg),
+  admin-notiser → kundens adress (svara direkt till kund)
+- Alla fyra mail har nu plain text-version utöver HTML (viktig spam-signal)
+- Avsändarnamn "ReLoka <adress>" sedan tidigare — verifierat
+- Ämnesrader granskade: inga versaler/utropstecken/triggerord; mailen är
+  textdominanta utan bilder
+- KVAR ATT ÖVERVÄGA: riktig bemannad info@reloka.se-inkorg (kräver
+  mejlhosting) — svar till no-reply studsar annars; DNS-rykte mognar med tiden
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { lasJson, validera, bostadSchema } from "@/lib/validering";
 
 export async function GET() {
   try {
@@ -27,39 +28,43 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
-  if (!auth.ok) {
-    return Response.json({ error: auth.error }, { status: auth.status });
+  try {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return Response.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
+
+    const valid = validera(bostadSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
+    const {
+      namn, adress, stadsdel, bostadstyp, beskrivning, bilder, delade_utrymmen, inkluderat,
+      kontaktperson_namn, kontaktperson_bild, kontaktperson_email, kontaktperson_telefon,
+    } = valid.data;
+
+    const bostad = await prisma.bostad.create({
+      data: {
+        namn,
+        adress: adress ?? null,
+        stadsdel: stadsdel ?? null,
+        bostadstyp: bostadstyp ?? "privat_rum",
+        beskrivning: beskrivning ?? null,
+        bilder: bilder ?? [],
+        delade_utrymmen: delade_utrymmen ?? [],
+        inkluderat: inkluderat ?? [],
+        kontaktperson_namn: kontaktperson_namn ?? null,
+        kontaktperson_bild: kontaktperson_bild ?? null,
+        kontaktperson_email: kontaktperson_email ?? null,
+        kontaktperson_telefon: kontaktperson_telefon ?? null,
+      },
+    });
+
+    return Response.json(bostad, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return Response.json({ error: "Serverfel" }, { status: 500 });
   }
-
-  const body = await request.json();
-  const {
-    namn, adress, stadsdel, bostadstyp, beskrivning, bilder, delade_utrymmen, inkluderat,
-    kontaktperson_namn, kontaktperson_bild, kontaktperson_email, kontaktperson_telefon,
-  } = body;
-
-  if (!namn) {
-    return Response.json({ error: "Namn krävs" }, { status: 400 });
-  }
-
-  const TILLATNA_BOSTADSTYPER = ["privat_rum", "rum_eget_bad", "hel_lagenhet"];
-
-  const bostad = await prisma.bostad.create({
-    data: {
-      namn,
-      adress: adress ?? null,
-      stadsdel: stadsdel ?? null,
-      bostadstyp: TILLATNA_BOSTADSTYPER.includes(bostadstyp) ? bostadstyp : "privat_rum",
-      beskrivning: beskrivning ?? null,
-      bilder: Array.isArray(bilder) ? bilder : [],
-      delade_utrymmen: Array.isArray(delade_utrymmen) ? delade_utrymmen : [],
-      inkluderat: Array.isArray(inkluderat) ? inkluderat : [],
-      kontaktperson_namn: kontaktperson_namn ?? null,
-      kontaktperson_bild: kontaktperson_bild ?? null,
-      kontaktperson_email: kontaktperson_email ?? null,
-      kontaktperson_telefon: kontaktperson_telefon ?? null,
-    },
-  });
-
-  return Response.json(bostad, { status: 201 });
 }

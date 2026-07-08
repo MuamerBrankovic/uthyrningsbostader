@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
+import { lasJson, validera, hyresvardSchema } from "@/lib/validering";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -13,26 +14,18 @@ export async function GET() {
   return Response.json(anmalningar);
 }
 
-type Body = {
-  namn: string;
-  telefon?: string;
-  email: string;
-  stad?: string;
-  adress?: string;
-  meddelande?: string;
-};
-
 export async function POST(request: Request) {
   const stoppad = rateLimit(request, "hyresvardar", { max: 5, fonsterMs: 10 * 60 * 1000 });
   if (stoppad) return stoppad;
 
   try {
-    const body: Body = await request.json();
-    const { namn, telefon, email, stad, adress, meddelande } = body;
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
 
-    if (!namn || !email) {
-      return Response.json({ error: "namn och email krävs" }, { status: 400 });
-    }
+    const valid = validera(hyresvardSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
+    const { namn, telefon, email, stad, adress, meddelande } = valid.data;
 
     const anmalan = await prisma.hyresvardsanmalan.create({
       data: {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { lasJson, validera, rumSchema } from "@/lib/validering";
 
 export async function POST(request: Request) {
   try {
@@ -8,22 +9,23 @@ export async function POST(request: Request) {
       return Response.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
-    const { bostad_id, namn, beskrivning, bilder, kvm, manadshyra, moblering } = body;
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
 
-    if (!bostad_id || !namn || manadshyra == null) {
-      return Response.json({ error: "bostad_id, namn och manadshyra krävs" }, { status: 400 });
-    }
+    const valid = validera(rumSchema, json.body);
+    if (!valid.ok) return valid.svar;
+
+    const { bostad_id, namn, beskrivning, bilder, kvm, manadshyra, moblering } = valid.data;
 
     const rum = await prisma.rum.create({
       data: {
         bostad_id,
         namn,
         beskrivning: beskrivning ?? null,
-        bilder: Array.isArray(bilder) ? bilder : [],
-        kvm: kvm ? Number(kvm) : null,
-        manadshyra: Number(manadshyra),
-        moblering: Array.isArray(moblering) ? moblering : [],
+        bilder: bilder ?? [],
+        kvm: kvm ?? null,
+        manadshyra,
+        moblering: moblering ?? [],
       },
     });
 

@@ -2,25 +2,20 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
+import { lasJson, validera, registreraSchema } from "@/lib/validering";
 
 export async function POST(request: Request) {
   const stoppad = rateLimit(request, "registrera", { max: 5, fonsterMs: 15 * 60 * 1000 });
   if (stoppad) return stoppad;
 
   try {
-    const body = await request.json();
-    const { namn, email, losenord } = body;
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
 
-    if (typeof namn !== "string" || typeof email !== "string" || !namn || !email || !losenord) {
-      return Response.json({ error: "Namn, e-post och lösenord krävs" }, { status: 400 });
-    }
+    const valid = validera(registreraSchema, json.body);
+    if (!valid.ok) return valid.svar;
 
-    if (typeof losenord !== "string" || losenord.length < 8) {
-      return Response.json(
-        { error: "Lösenordet måste vara minst 8 tecken" },
-        { status: 400 }
-      );
-    }
+    const { namn, email, losenord } = valid.data;
 
     const existing = await prisma.anvandare.findUnique({ where: { email } });
     if (existing) {

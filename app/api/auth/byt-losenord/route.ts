@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/auth";
-
-const MIN_LANGD = 8;
+import { lasJson, validera, bytLosenordSchema } from "@/lib/validering";
 
 export async function POST(request: Request) {
   try {
@@ -11,22 +10,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "Ej inloggad" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { nuvarandeLosenord, nyttLosenord } = body;
+    const json = await lasJson(request);
+    if (!json.ok) return json.svar;
 
-    if (!nuvarandeLosenord || !nyttLosenord) {
-      return Response.json(
-        { error: "Både nuvarande och nytt lösenord krävs" },
-        { status: 400 }
-      );
-    }
+    const valid = validera(bytLosenordSchema, json.body);
+    if (!valid.ok) return valid.svar;
 
-    if (typeof nyttLosenord !== "string" || nyttLosenord.length < MIN_LANGD) {
-      return Response.json(
-        { error: `Det nya lösenordet måste vara minst ${MIN_LANGD} tecken` },
-        { status: 400 }
-      );
-    }
+    const { nuvarandeLosenord, nyttLosenord } = valid.data;
 
     const anvandare = await prisma.anvandare.findUnique({
       where: { email: session.email },
