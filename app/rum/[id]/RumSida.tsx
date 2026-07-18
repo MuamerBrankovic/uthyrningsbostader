@@ -393,9 +393,9 @@ export default function RumSida({ rumId }: { rumId: string }) {
             Tillbaka till {rum.bostad.namn}
           </Link>
 
-          <div className="grid md:grid-cols-5 gap-8">
+          <div className="grid lg:grid-cols-5 gap-8">
             {/* VÄNSTER */}
-            <div className="md:col-span-3">
+            <div className="lg:col-span-3">
               {/* BILDGALLERI */}
               <Bildgalleri bilder={rum.bilder} alt={rum.namn} placeholder="🛏" />
 
@@ -447,8 +447,8 @@ export default function RumSida({ rumId }: { rumId: string }) {
             </div>
 
             {/* HÖGER — Bokningsbox */}
-            <div className="md:col-span-2">
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:sticky lg:top-24">
                 {/* Status-cirkel ovanför priset */}
                 <div className="flex items-center gap-3 mb-4">
                   <StatusCirkelStor color={statusInfo.color as "green" | "yellow" | "gray"} />

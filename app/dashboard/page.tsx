@@ -53,6 +53,10 @@ type AdminBokning = {
   slutdatum: string | null;
   status: string;
   avtalstyp: string;
+  kontrakt_url: string | null;
+  kontrakt_status: string;
+  kontrakt_uppdaterad: string | null;
+  faktura_status: string;
   created_at: string;
   rum: RumInfo;
 };
@@ -938,6 +942,174 @@ function BokningStatusBadge({ status }: { status: string }) {
   );
 }
 
+function KontraktStatusBadge({ status }: { status: string }) {
+  const stil: Record<string, { cls: string; label: string }> = {
+    saknas: { cls: "bg-gray-100 text-gray-500", label: "Saknas" },
+    uppladdat: { cls: "bg-blue-100 text-blue-700", label: "Uppladdat" },
+    skickat: { cls: "bg-yellow-100 text-yellow-700", label: "Skickat" },
+    signerat: { cls: "bg-green-100 text-green-700", label: "Signerat" },
+  };
+  const s = stil[status] ?? stil.saknas;
+  return (
+    <span className={`text-xs px-3 py-1 rounded-full font-medium ${s.cls}`}>{s.label}</span>
+  );
+}
+
+function FakturaStatusBadge({ status }: { status: string }) {
+  const stil: Record<string, { cls: string; label: string }> = {
+    ej_fakturerad: { cls: "bg-gray-100 text-gray-500", label: "Ej fakturerad" },
+    fakturerad: { cls: "bg-yellow-100 text-yellow-700", label: "Fakturerad" },
+    betald: { cls: "bg-green-100 text-green-700", label: "Betald" },
+  };
+  const s = stil[status] ?? stil.ej_fakturerad;
+  return (
+    <span className={`text-xs px-3 py-1 rounded-full font-medium ${s.cls}`}>{s.label}</span>
+  );
+}
+
+const SELECT_LITEN_CLS =
+  "border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-[#2D7A4F] bg-white";
+
+function KontraktSektion({
+  bokning,
+  arbetar,
+  onPatch,
+  onUppladdat,
+}: {
+  bokning: AdminBokning;
+  arbetar: boolean;
+  onPatch: (data: { kontrakt_status?: string; faktura_status?: string }) => void;
+  onUppladdat: (partial: Partial<AdminBokning>) => void;
+}) {
+  const filRef = useRef<HTMLInputElement>(null);
+  const [laddarUpp, setLaddarUpp] = useState(false);
+  const [uploadFel, setUploadFel] = useState("");
+
+  async function laddaUpp(fil: File) {
+    setLaddarUpp(true);
+    setUploadFel("");
+    const fd = new FormData();
+    fd.append("file", fil);
+    fd.append("bokning_id", bokning.id);
+    try {
+      const res = await fetch("/api/kontrakt", { method: "POST", body: fd });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data) {
+        onUppladdat(data);
+      } else {
+        setUploadFel(data?.error ?? "Uppladdningen misslyckades");
+      }
+    } catch {
+      setUploadFel("Uppladdningen misslyckades");
+    }
+    setLaddarUpp(false);
+  }
+
+  const upptagen = arbetar || laddarUpp;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100 grid md:grid-cols-2 gap-x-6 gap-y-4">
+      {/* ── Kontrakt ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Kontrakt
+          </span>
+          <KontraktStatusBadge status={bokning.kontrakt_status} />
+          {bokning.kontrakt_uppdaterad && (
+            <span className="text-xs text-gray-400">
+              {formateraDatum(bokning.kontrakt_uppdaterad)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            ref={filRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const fil = e.target.files?.[0];
+              if (fil) laddaUpp(fil);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => filRef.current?.click()}
+            disabled={upptagen}
+            className="text-xs bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full hover:border-[#2D7A4F] hover:text-[#2D7A4F] transition-colors disabled:opacity-40 font-medium"
+          >
+            {laddarUpp ? "Laddar upp..." : bokning.kontrakt_url ? "Ersätt PDF" : "Ladda upp PDF"}
+          </button>
+          {bokning.kontrakt_url && (
+            <a
+              href={bokning.kontrakt_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#2D7A4F] hover:underline font-medium"
+            >
+              Visa kontrakt
+            </a>
+          )}
+          <select
+            value={bokning.kontrakt_status}
+            onChange={(e) => onPatch({ kontrakt_status: e.target.value })}
+            disabled={upptagen}
+            className={SELECT_LITEN_CLS}
+            aria-label="Kontraktstatus"
+          >
+            <option value="saknas">Saknas</option>
+            <option value="uppladdat">Uppladdat</option>
+            <option value="skickat">Skickat</option>
+            <option value="signerat">Signerat</option>
+          </select>
+        </div>
+        <div className="mt-2">
+          <button
+            disabled
+            title="Scrive-integration kommer snart"
+            className="text-xs bg-gray-50 border border-gray-100 text-gray-300 px-4 py-1.5 rounded-full cursor-not-allowed font-medium"
+          >
+            Skicka för e-signering
+          </button>
+          <span className="text-xs text-gray-400 ml-2">Scrive-integration kommer snart</span>
+        </div>
+        {uploadFel && <p className="text-xs text-red-500 mt-2">{uploadFel}</p>}
+      </div>
+
+      {/* ── Fakturering ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Fakturering
+          </span>
+          <FakturaStatusBadge status={bokning.faktura_status} />
+        </div>
+        {bokning.status === "bekraftad" ? (
+          <>
+            <select
+              value={bokning.faktura_status}
+              onChange={(e) => onPatch({ faktura_status: e.target.value })}
+              disabled={upptagen}
+              className={SELECT_LITEN_CLS}
+              aria-label="Fakturastatus"
+            >
+              <option value="ej_fakturerad">Ej fakturerad</option>
+              <option value="fakturerad">Fakturerad</option>
+              <option value="betald">Betald</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-2">
+              Fakturering sker manuellt. Integration med bokföringssystem (Fortnox/Bokio) planeras.
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-gray-400">Faktureras efter att bokningen bekräftats.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AllaBokningar() {
   const [bokningar, setBokningar] = useState<AdminBokning[]>([]);
   const [laddar, setLaddar] = useState(true);
@@ -967,7 +1139,12 @@ function AllaBokningar() {
 
   async function uppdatera(
     id: string,
-    data: { status?: string; slutdatum?: string | null }
+    data: {
+      status?: string;
+      slutdatum?: string | null;
+      kontrakt_status?: string;
+      faktura_status?: string;
+    }
   ) {
     setUppdaterarId(id);
     setFel("");
@@ -1091,6 +1268,17 @@ function AllaBokningar() {
                 </div>
               )}
             </div>
+
+            <KontraktSektion
+              bokning={b}
+              arbetar={arbetar}
+              onPatch={(data) => uppdatera(b.id, data)}
+              onUppladdat={(partial) =>
+                setBokningar((prev) =>
+                  prev.map((x) => (x.id === b.id ? { ...x, ...partial } : x))
+                )
+              }
+            />
           </div>
         );
       })}

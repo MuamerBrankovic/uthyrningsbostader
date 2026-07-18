@@ -22,10 +22,25 @@ export async function PATCH(
     const valid = validera(bokningPatchSchema, json.body);
     if (!valid.ok) return valid.svar;
 
-    const data: { status?: "forfragan" | "bekraftad" | "avbokad"; slutdatum?: Date | null } = {};
+    const data: {
+      status?: "forfragan" | "bekraftad" | "avbokad";
+      slutdatum?: Date | null;
+      kontrakt_status?: string;
+      kontrakt_uppdaterad?: Date;
+      faktura_status?: string;
+    } = {};
 
     if (valid.data.status !== undefined) {
       data.status = valid.data.status;
+    }
+
+    if (valid.data.kontrakt_status !== undefined) {
+      data.kontrakt_status = valid.data.kontrakt_status;
+      data.kontrakt_uppdaterad = new Date();
+    }
+
+    if (valid.data.faktura_status !== undefined) {
+      data.faktura_status = valid.data.faktura_status;
     }
 
     if (valid.data.slutdatum !== undefined) {

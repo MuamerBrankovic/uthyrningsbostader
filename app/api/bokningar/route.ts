@@ -36,12 +36,27 @@ export async function GET(request: Request) {
       return Response.json({ error: "Ej inloggad" }, { status: 401 });
     }
 
-    // Filtrera på kontokoppling — aldrig på e-post, som inte är verifierad
+    // Filtrera på kontokoppling — aldrig på e-post, som inte är verifierad.
+    // Vitlistade fält: kontrakt_url m.m. hör hemma i admin-vyn, inte här.
     const bokningar = await prisma.bokning.findMany({
       where: { anvandare_id: session.userId },
-      include: {
+      select: {
+        id: true,
+        kund_kontaktperson: true,
+        boende_namn: true,
+        email: true,
+        startdatum: true,
+        slutdatum: true,
+        status: true,
+        avtalstyp: true,
+        created_at: true,
         rum: {
-          include: { bostad: true },
+          select: {
+            id: true,
+            namn: true,
+            manadshyra: true,
+            bostad: { select: { id: true, namn: true, stadsdel: true } },
+          },
         },
       },
       orderBy: { created_at: "desc" },

@@ -235,44 +235,27 @@ export default function Home() {
 
       {/* VARFÖR LOKALT */}
       <section className="bg-[#1a1a1a] text-white py-20 px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Lokal närvaro</span>
-            <h2 className="text-3xl font-bold mt-3 mb-6">
-              Vi kan Linköping och Norrköping inifrån och ut
-            </h2>
-            <p className="text-gray-300 text-sm leading-relaxed mb-6">
-              Till skillnad från nationella plattformar har vi personlig kännedom om varje bostad, varje hyresvärd
-              och varje stadsdel i de städer vi verkar i. Det ger er trygghet — och er konsult en bra start.
-            </p>
-            <div className="grid grid-cols-2 gap-6">
-              {[
-                { num: "48h", label: "Genomsnittlig tid från kontakt till avtal" },
-                { num: "100%", label: "Besiktade och godkända bostäder" },
-                { num: "1", label: "Faktura per uppdrag — oavsett antal rum" },
-                { num: "2h", label: "Svarstid på vardagar" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <p className="text-3xl font-bold text-[#2D7A4F]">{s.num}</p>
-                  <p className="text-xs text-gray-400 mt-1 leading-snug">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-            <p className="text-gray-300 text-sm leading-relaxed italic mb-6">
-              &ldquo;Vi anlitar konsulter i Linköping regelbundet och ReLoka har sparat oss otaliga timmar
-              av letande och administration. Rekommenderas varmt.&rdquo;
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#2D7A4F] flex items-center justify-center text-white font-bold text-sm">
-                A
+        <div className="max-w-3xl mx-auto text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Lokal närvaro</span>
+          <h2 className="text-3xl font-bold mt-3 mb-6">
+            Vi kan Linköping och Norrköping inifrån och ut
+          </h2>
+          <p className="text-gray-300 text-sm leading-relaxed mb-10 max-w-xl mx-auto">
+            Till skillnad från nationella plattformar har vi personlig kännedom om varje bostad, varje hyresvärd
+            och varje stadsdel i de städer vi verkar i. Det ger er trygghet — och er konsult en bra start.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
+            {[
+              { num: "48h", label: "Vårt mål: från kontakt till avtal" },
+              { num: "100%", label: "Besiktade och godkända bostäder" },
+              { num: "1", label: "Faktura per uppdrag — oavsett antal rum" },
+              { num: "2h", label: "Vi svarar inom 2 timmar på vardagar" },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="text-3xl font-bold text-[#2D7A4F]">{s.num}</p>
+                <p className="text-xs text-gray-400 mt-1 leading-snug">{s.label}</p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-white">Anna K.</p>
-                <p className="text-xs text-gray-400">HR-chef, teknikföretag</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>

@@ -69,6 +69,12 @@ model Bokning {
   slutdatum          DateTime?
   status             String   @default("forfragan")
   avtalstyp          String   @default("standard")
+  // Kontrakthantering (admin) — saknas | uppladdat | skickat | signerat
+  kontrakt_url         String?
+  kontrakt_status      String    @default("saknas")
+  kontrakt_uppdaterad  DateTime?
+  // Fakturering (admin, platshållare) — ej_fakturerad | fakturerad | betald
+  faktura_status       String    @default("ej_fakturerad")
   created_at         DateTime @default(now())
 
   @@index([anvandare_id])

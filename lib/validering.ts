@@ -155,10 +155,21 @@ export const bokningPatchSchema = z
       error: "status måste vara en av: forfragan, bekraftad, avbokad",
     }).optional(),
     slutdatum: z.string().trim().max(30).nullable().optional(),
+    kontrakt_status: z.enum(["saknas", "uppladdat", "skickat", "signerat"], {
+      error: "kontrakt_status måste vara en av: saknas, uppladdat, skickat, signerat",
+    }).optional(),
+    faktura_status: z.enum(["ej_fakturerad", "fakturerad", "betald"], {
+      error: "faktura_status måste vara en av: ej_fakturerad, fakturerad, betald",
+    }).optional(),
   })
-  .refine((d) => d.status !== undefined || d.slutdatum !== undefined, {
-    error: "Ange status och/eller slutdatum",
-  });
+  .refine(
+    (d) =>
+      d.status !== undefined ||
+      d.slutdatum !== undefined ||
+      d.kontrakt_status !== undefined ||
+      d.faktura_status !== undefined,
+    { error: "Ange minst ett fält att uppdatera" }
+  );
 
 // ─── Hjälpare ────────────────────────────────────────────────────────────────
 

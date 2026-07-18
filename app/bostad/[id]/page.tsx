@@ -11,8 +11,8 @@ import {
   Clock,
   XCircle,
   Users,
-  CalendarDays,
   MapPin,
+  Tag,
   ArrowLeft,
 } from "lucide-react";
 
@@ -40,6 +40,7 @@ type Bostad = {
   namn: string;
   adress: string | null;
   stadsdel: string | null;
+  bostadstyp: string;
   beskrivning: string | null;
   bilder: string[];
   delade_utrymmen: string[];
@@ -75,20 +76,6 @@ function getRumStatus(rum: Rum): RumStatus {
   const fran = new Date(latest);
   fran.setDate(fran.getDate() + 1);
   return { typ: "ledigt-fran", datum: fran };
-}
-
-function getNarmstaLedigaDatum(rum: Rum[]): string {
-  if (rum.length === 0) return "—";
-  if (rum.some((r) => getRumStatus(r).typ === "ledig")) return "Idag";
-
-  const dates = rum
-    .map((r) => getRumStatus(r))
-    .filter((s): s is { typ: "ledigt-fran"; datum: Date } => s.typ === "ledigt-fran")
-    .map((s) => s.datum);
-
-  if (dates.length === 0) return "—";
-  const earliest = dates.reduce((min, d) => (d < min ? d : min));
-  return formateraKortDatum(earliest);
 }
 
 // ─── Status-badge (text) ──────────────────────────────────────────────────────
@@ -139,50 +126,95 @@ function StatusCirkel({ status }: { status: RumStatus }) {
   );
 }
 
-// ─── Faktarad ────────────────────────────────────────────────────────────────
+// ─── Bostadstyp-badge ──────────────────────────────────────────────────────────
 
-function Faktarad({ bostad }: { bostad: Bostad }) {
+function BostadstypBadge({ typ }: { typ: string }) {
+  const labels: Record<string, string> = {
+    privat_rum: "Privat rum",
+    rum_eget_bad: "Rum med eget bad",
+    hel_lagenhet: "Hel lägenhet",
+  };
+  return (
+    <span className="text-xs font-medium bg-[#e8f5ee] text-[#2D7A4F] px-2.5 py-1 rounded-full shrink-0">
+      {labels[typ] ?? typ}
+    </span>
+  );
+}
+
+// ─── Fastighetskort (sticky infopanel) ─────────────────────────────────────────
+
+function Fastighetskort({ bostad, onSeRum }: { bostad: Bostad; onSeRum: () => void }) {
   const ledigaRum = bostad.rum.filter((r) => getRumStatus(r).typ === "ledig").length;
-  const narmstLedigt = getNarmstaLedigaDatum(bostad.rum);
+  const priser = bostad.rum.map((r) => r.manadshyra);
+  const franPris = priser.length > 0 ? Math.min(...priser) : null;
 
-  const stats = [
-    {
-      label: "Antal rum",
-      value: String(bostad.rum.length),
-      grön: false,
-      icon: <BedDouble className="w-5 h-5 text-[#2D7A4F] mx-auto mb-2" />,
-    },
-    {
-      label: "Lediga just nu",
-      value: String(ledigaRum),
-      grön: ledigaRum > 0,
-      icon: <Users className="w-5 h-5 text-[#2D7A4F] mx-auto mb-2" />,
-    },
-    {
-      label: "Närmst ledigt",
-      value: narmstLedigt,
-      grön: false,
-      icon: <CalendarDays className="w-5 h-5 text-[#2D7A4F] mx-auto mb-2" />,
-    },
-    {
-      label: "Närmaste hållplats",
-      value: bostad.narmaste_hallplats ?? "—",
-      grön: false,
-      icon: <MapPin className="w-5 h-5 text-[#2D7A4F] mx-auto mb-2" />,
-    },
+  const fakta: { icon: typeof BedDouble; label: string; value: string; grön?: boolean }[] = [
+    { icon: BedDouble, label: "Antal rum", value: String(bostad.rum.length) },
+    { icon: Users, label: "Lediga nu", value: String(ledigaRum), grön: ledigaRum > 0 },
+    { icon: Tag, label: "Från", value: franPris ? `${franPris.toLocaleString()} kr/mån` : "—" },
+    { icon: MapPin, label: "Hållplats", value: bostad.narmaste_hallplats ?? "—" },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-      {stats.map((s) => (
-        <div key={s.label} className="bg-[#e8f5ee] rounded-2xl p-5 text-center">
-          {s.icon}
-          <p className={`text-2xl font-bold ${s.grön ? "text-green-600" : "text-[#2D7A4F]"}`}>
-            {s.value}
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:sticky lg:top-24">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h2 className="text-xl font-bold text-[#1a1a1a]">{bostad.namn}</h2>
+        <BostadstypBadge typ={bostad.bostadstyp} />
+      </div>
+      {(bostad.stadsdel || bostad.adress) && (
+        <p className="text-sm text-gray-400 mb-5">
+          {[bostad.stadsdel, bostad.adress].filter(Boolean).join(" · ")}
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 pb-5 mb-5 border-b border-gray-100">
+        {fakta.map((f) => (
+          <div key={f.label}>
+            <f.icon className="w-4 h-4 text-[#2D7A4F] mb-1.5" />
+            <p className={`text-lg font-bold ${f.grön ? "text-green-600" : "text-[#1a1a1a]"}`}>
+              {f.value}
+            </p>
+            <p className="text-xs text-gray-400">{f.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {bostad.delade_utrymmen.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Delade utrymmen
           </p>
-          <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {bostad.delade_utrymmen.map((u) => (
+              <span key={u} className="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full">
+                {u}
+              </span>
+            ))}
+          </div>
         </div>
-      ))}
+      )}
+
+      {bostad.inkluderat.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Vad ingår
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {bostad.inkluderat.map((i) => (
+              <span key={i} className="text-xs bg-[#e8f5ee] text-[#2D7A4F] px-2.5 py-1 rounded-full">
+                {i}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={onSeRum}
+        className="w-full bg-[#2D7A4F] text-white text-sm py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors font-medium"
+      >
+        Se lediga rum
+      </button>
     </div>
   );
 }
@@ -360,6 +392,11 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
   const resolvedParams = use(params);
   const [bostad, setBostad] = useState<Bostad | null>(null);
   const [laddar, setLaddar] = useState(true);
+  const rumRef = useRef<HTMLDivElement>(null);
+
+  function scrollTillRum() {
+    rumRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   useEffect(() => {
     fetch(`/api/bostader/${resolvedParams.id}`)
@@ -441,15 +478,9 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
           Tillbaka till alla bostäder
         </Link>
 
-        {/* FAKTARAD */}
-        <Faktarad bostad={bostad} />
-
-        {/* BILDGALLERI */}
-        {bostad.bilder.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-[#1a1a1a] mb-4">
-              Delade utrymmen och bostaden
-            </h2>
+        {/* GALLERI + FASTIGHETSKORT */}
+        <div className="grid lg:grid-cols-5 gap-8 mb-12">
+          <div className="lg:col-span-3">
             <Bildgalleri
               bilder={
                 bostad.bilder.length > 1
@@ -459,7 +490,10 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
               alt={bostad.namn}
             />
           </div>
-        )}
+          <div className="lg:col-span-2">
+            <Fastighetskort bostad={bostad} onSeRum={scrollTillRum} />
+          </div>
+        </div>
 
         {/* INFO-KORT */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
@@ -502,7 +536,7 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
         </div>
 
         {/* RUMSGRID */}
-        <div>
+        <div ref={rumRef} className="scroll-mt-24">
           <div className="flex items-end justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a1a]">

@@ -418,6 +418,61 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 12
+
+### Innehållsstädning (trovärdighet/juridik)
+- Fabricerad kundrecension ("Anna K., HR-chef") borttagen från startsidan —
+  inga kunder finns än, påhittade recensioner är vilseledande marknadsföring
+- "Lokal närvaro"-sektionen omgjord till centrerad layout med 4 stat-kolumner
+- "48h Genomsnittlig tid..." → "48h Vårt mål: från kontakt till avtal"
+- "2h Svarstid på vardagar" → "2h Vi svarar inom 2 timmar på vardagar"
+- "100% Besiktade och godkända bostäder" kvar (policy, inte statistik)
+
+### Ny layout: galleri vänster + sticky infopanel höger (desktop lg:)
+- /bostad/[id]: Bildgalleri (60%) + nytt "Fastighetskort" (40%, sticky top-24)
+  med namn/stadsdel/bostadstyp-badge, nyckelfakta med ikoner (antal rum,
+  lediga nu, från-pris, hållplats), delade utrymmen + inkluderat som chips,
+  CTA "Se lediga rum" som scrollar mjukt till rumssektionen (scroll-mt-24)
+- Gamla Faktarad (4 stat-kort) BORTTAGEN — fastighetskortet visar samma
+  info; att ha båda hade dubblerat innehållet. "Närmst ledigt"-datumet utgick
+  (syns per rum på rumskorten); från-pris tillkom istället
+- Separata "Delade utrymmen"/"Vad ingår"-korten borttagna (nu chips i kortet);
+  "Om bostaden"-beskrivningen ligger kvar i egen full-bredd-sektion
+- Mobil: staplar galleri → infokort → beskrivning → rum
+- /rum/[id]: bytte md: → lg: på tvåkolumnslayouten + lg:sticky på boknings-
+  panelen så breakpoint/beteende matchar bostadssidan
+- Rumskort, status-cirklar, hover-overlay, bottom sheet: orörda
+
+### Kontrakthantering (admin)
+- Migration 20260708090955_kontrakt_faktura (additiv): Bokning fick
+  kontrakt_url, kontrakt_status (default "saknas"), kontrakt_uppdaterad,
+  faktura_status (default "ej_fakturerad")
+- Ny route POST /api/kontrakt (requireAdmin): endast application/pdf,
+  max 4 MB (under Vercels 4,5 MB-gräns), laddas till Vercel Blob med
+  addRandomSuffix (ogissbar URL — kontrakt innehåller persondata),
+  sparar url + status "uppladdat" + tidsstämpel
+- PATCH /api/bokningar/[id] utökad: kontrakt_status + faktura_status
+  (Zod-enum-validerade); kontrakt_uppdaterad sätts vid statusbyte;
+  all bekräfta/avboka/slutdatum-logik orörd
+- Admin-UI i "Alla bokningar": Kontrakt-sektion per bokning med statusbadge
+  (saknas=grå, uppladdat=blå, skickat=gul, signerat=grön), Ladda upp/Ersätt
+  PDF, "Visa kontrakt" (ny flik), status-dropdown, inaktiv "Skicka för
+  e-signering"-knapp ("Scrive-integration kommer snart")
+
+### Fakturering (platshållare, admin)
+- Faktura-badge (ej fakturerad=grå, fakturerad=gul, betald=grön) +
+  dropdown — endast på bekräftade bokningar (förfrågningar faktureras inte)
+- Text: "Fakturering sker manuellt. Integration med bokföringssystem
+  (Fortnox/Bokio) planeras."
+
+### PII-skydd verifierat
+- Publika GET (bostader, bostader/[id], rum/[id]) har select-vitlistor —
+  kontrakt-/fakturafälten kan inte läcka där
+- GET /api/bokningar ("Mina bokningar", inloggad) vitlistades också —
+  kontrakt_url exponeras nu ENDAST i admin-vyer (?alla=1 + PATCH-svar)
+- Verifierat med grep: kontrakt_url förekommer bara i admin-route,
+  admin-UI och kommentar
+
 ## Dag 11
 
 ### Grupp 1 från förbättringsplanen (efter godkänd prioritering)
