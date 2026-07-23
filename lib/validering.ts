@@ -171,6 +171,39 @@ export const bokningPatchSchema = z
     { error: "Ange minst ett fält att uppdatera" }
   );
 
+// Lead-uppföljning: status och/eller intern anteckning (admin)
+const internNotering = z
+  .string()
+  .max(2000, "Anteckningen får vara högst 2000 tecken")
+  .nullable()
+  .optional();
+
+export const offertPatchSchema = z
+  .object({
+    status: z
+      .enum(["obehandlad", "kontaktad", "offert_skickad", "vunnen", "forlorad"], {
+        error: "Ogiltig status",
+      })
+      .optional(),
+    intern_notering: internNotering,
+  })
+  .refine((d) => d.status !== undefined || d.intern_notering !== undefined, {
+    error: "Ange status och/eller intern anteckning",
+  });
+
+export const hyresvardPatchSchema = z
+  .object({
+    status: z
+      .enum(["obehandlad", "kontaktad", "pagaende", "avtal_klart", "ej_aktuell"], {
+        error: "Ogiltig status",
+      })
+      .optional(),
+    intern_notering: internNotering,
+  })
+  .refine((d) => d.status !== undefined || d.intern_notering !== undefined, {
+    error: "Ange status och/eller intern anteckning",
+  });
+
 // ─── Hjälpare ────────────────────────────────────────────────────────────────
 
 type ValideringsResultat<T> = { ok: true; data: T } | { ok: false; svar: Response };

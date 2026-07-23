@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formateraDatum } from "@/lib/datum";
+import { formateraDatum, formateraDatumTid } from "@/lib/datum";
 import { useSession, type Session } from "@/app/components/SessionProvider";
 
 type RumInfo = {
@@ -74,6 +74,8 @@ type Offert = {
   bostadstyp: string | null;
   meddelande: string | null;
   status: string;
+  intern_notering: string | null;
+  uppdaterad: string | null;
   created_at: string;
 };
 
@@ -85,6 +87,9 @@ type Hyresvardsanmalan = {
   stad: string | null;
   adress: string | null;
   meddelande: string | null;
+  status: string;
+  intern_notering: string | null;
+  uppdaterad: string | null;
   created_at: string;
 };
 
@@ -732,30 +737,282 @@ function LaggUppRum() {
 
 // ─── Flik: Offertförfrågningar (admin) ───────────────────────────────────────
 
-function Offertforfragningar() {
-  const [offerter, setOfferter] = useState<Offert[]>([]);
+// ─── Lead-uppföljning (offert + hyresvärd): delad infrastruktur ──────────────
+
+type LeadStatusMeta = {
+  label: string; // dropdown + badge, t.ex. "Obehandlad"
+  en: string; // räknare singular, t.ex. "obehandlad"
+  flera: string; // räknare plural, t.ex. "obehandlade"
+  grupp: "obehandlad" | "aktiv" | "avslutad";
+  badge: string; // Tailwind-klasser för badge
+};
+type LeadConfig = { ordning: string[]; meta: Record<string, LeadStatusMeta> };
+
+type LeadItem = {
+  id: string;
+  status: string;
+  intern_notering: string | null;
+  uppdaterad: string | null;
+  created_at: string;
+};
+
+const BADGE_OBEHANDLAD = "bg-[#e8f5ee] text-[#2D7A4F]"; // grön accent — kräver handling
+const BADGE_AMBER = "bg-amber-100 text-amber-700";
+const BADGE_BLA = "bg-blue-100 text-blue-700";
+const BADGE_VUNNEN = "bg-[#2D7A4F] text-white"; // fylld grön
+const BADGE_GRA = "bg-gray-100 text-gray-500";
+
+const OFFERT_CONFIG: LeadConfig = {
+  ordning: ["obehandlad", "kontaktad", "offert_skickad", "vunnen", "forlorad"],
+  meta: {
+    obehandlad: { label: "Obehandlad", en: "obehandlad", flera: "obehandlade", grupp: "obehandlad", badge: BADGE_OBEHANDLAD },
+    kontaktad: { label: "Kontaktad", en: "kontaktad", flera: "kontaktade", grupp: "aktiv", badge: BADGE_AMBER },
+    offert_skickad: { label: "Offert skickad", en: "offert skickad", flera: "offert skickade", grupp: "aktiv", badge: BADGE_BLA },
+    vunnen: { label: "Vunnen", en: "vunnen", flera: "vunna", grupp: "avslutad", badge: BADGE_VUNNEN },
+    forlorad: { label: "Förlorad", en: "förlorad", flera: "förlorade", grupp: "avslutad", badge: BADGE_GRA },
+  },
+};
+
+const HYRESVARD_CONFIG: LeadConfig = {
+  ordning: ["obehandlad", "kontaktad", "pagaende", "avtal_klart", "ej_aktuell"],
+  meta: {
+    obehandlad: { label: "Obehandlad", en: "obehandlad", flera: "obehandlade", grupp: "obehandlad", badge: BADGE_OBEHANDLAD },
+    kontaktad: { label: "Kontaktad", en: "kontaktad", flera: "kontaktade", grupp: "aktiv", badge: BADGE_AMBER },
+    pagaende: { label: "Pågående", en: "pågående", flera: "pågående", grupp: "aktiv", badge: BADGE_AMBER },
+    avtal_klart: { label: "Avtal klart", en: "avtal klart", flera: "avtal klara", grupp: "avslutad", badge: BADGE_VUNNEN },
+    ej_aktuell: { label: "Ej aktuell", en: "ej aktuell", flera: "ej aktuella", grupp: "avslutad", badge: BADGE_GRA },
+  },
+};
+
+const GRUPP_RANK: Record<string, number> = { obehandlad: 0, aktiv: 1, avslutad: 2 };
+
+// Okänd status (inkl. legacy "ny") behandlas som obehandlad → syns som lead att ta tag i
+function leadMeta(config: LeadConfig, status: string): LeadStatusMeta {
+  return config.meta[status] ?? config.meta.obehandlad;
+}
+
+function LeadBadge({ config, status }: { config: LeadConfig; status: string }) {
+  const m = leadMeta(config, status);
+  return <span className={`text-xs font-medium px-3 py-1 rounded-full ${m.badge}`}>{m.label}</span>;
+}
+
+function LeadRaknare({ config, statusar }: { config: LeadConfig; statusar: string[] }) {
+  const antal: Record<string, number> = {};
+  for (const s of statusar) {
+    const key = config.meta[s] ? s : "obehandlad";
+    antal[key] = (antal[key] ?? 0) + 1;
+  }
+  const obeh = antal["obehandlad"] ?? 0;
+  const ovriga = config.ordning
+    .filter((k) => k !== "obehandlad" && (antal[k] ?? 0) > 0)
+    .map((k) => `${antal[k]} ${config.meta[k].flera}`);
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap mb-6">
+      {obeh > 0 ? (
+        <span className="inline-flex items-center gap-2 text-sm font-semibold bg-[#e8f5ee] text-[#2D7A4F] px-4 py-2 rounded-full">
+          <span className="w-2 h-2 rounded-full bg-[#2D7A4F]" />
+          {obeh} {obeh === 1 ? config.meta.obehandlad.en : config.meta.obehandlad.flera} — kräver handling
+        </span>
+      ) : (
+        <span className="text-sm text-gray-400">Inga obehandlade just nu</span>
+      )}
+      {ovriga.length > 0 && <span className="text-sm text-gray-400">{ovriga.join(" · ")}</span>}
+    </div>
+  );
+}
+
+function LeadMeddelande({ text }: { text: string }) {
+  const [expanderad, setExpanderad] = useState(false);
+  const MAXLANGD = 220;
+  const arLangt = text.length > MAXLANGD;
+  const visat = expanderad || !arLangt ? text : text.slice(0, MAXLANGD).trimEnd() + "…";
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Meddelande</p>
+      <p className="text-sm text-gray-700 whitespace-pre-line">{visat}</p>
+      {arLangt && (
+        <button
+          onClick={() => setExpanderad((v) => !v)}
+          className="text-xs text-[#2D7A4F] hover:underline mt-1 font-medium"
+        >
+          {expanderad ? "Visa mindre" : "Visa mer"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function LeadKort({
+  config,
+  endpoint,
+  item,
+  header,
+  fakta,
+  meddelande,
+  onChange,
+}: {
+  config: LeadConfig;
+  endpoint: string;
+  item: LeadItem;
+  header: React.ReactNode;
+  fakta: React.ReactNode;
+  meddelande: string | null;
+  onChange: (partial: Partial<LeadItem>) => void;
+}) {
+  const meta = leadMeta(config, item.status);
+  const avslutad = meta.grupp === "avslutad";
+  const [sparar, setSparar] = useState(false);
+  const [fel, setFel] = useState("");
+  const [notering, setNotering] = useState(item.intern_notering ?? "");
+  const [noteringSparad, setNoteringSparad] = useState(false);
+
+  async function patch(data: { status?: string; intern_notering?: string | null }) {
+    const res = await fetch(`${endpoint}/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const svar = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(svar.error ?? "Kunde inte spara");
+    return svar;
+  }
+
+  async function bytStatus(nyStatus: string) {
+    const gammal = item.status;
+    setFel("");
+    onChange({ status: nyStatus }); // optimistiskt — ärendet grupperas om direkt
+    try {
+      const svar = await patch({ status: nyStatus });
+      onChange({ status: svar.status, uppdaterad: svar.uppdaterad });
+    } catch (e) {
+      onChange({ status: gammal }); // rulla tillbaka vid fel
+      setFel(e instanceof Error ? e.message : "Kunde inte spara statusen");
+    }
+  }
+
+  async function sparaNotering() {
+    setSparar(true);
+    setFel("");
+    setNoteringSparad(false);
+    try {
+      const svar = await patch({ intern_notering: notering });
+      onChange({ intern_notering: svar.intern_notering, uppdaterad: svar.uppdaterad });
+      setNoteringSparad(true);
+      setTimeout(() => setNoteringSparad(false), 3000);
+    } catch (e) {
+      setFel(e instanceof Error ? e.message : "Kunde inte spara anteckningen");
+    }
+    setSparar(false);
+  }
+
+  const oandradNotering = notering === (item.intern_notering ?? "");
+
+  return (
+    <div className={`bg-white rounded-2xl border border-gray-100 p-6 transition-opacity ${avslutad ? "opacity-60" : ""}`}>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+        <div className="min-w-0">{header}</div>
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <LeadBadge config={config} status={item.status} />
+          <select
+            value={config.meta[item.status] ? item.status : "obehandlad"}
+            onChange={(e) => bytStatus(e.target.value)}
+            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-[#2D7A4F] bg-white"
+            aria-label="Ändra status"
+          >
+            {config.ordning.map((k) => (
+              <option key={k} value={k}>
+                {config.meta[k].label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">{fakta}</div>
+
+      {meddelande && <LeadMeddelande text={meddelande} />}
+
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+          Intern anteckning{" "}
+          <span className="normal-case font-normal text-gray-300">(syns bara för admin)</span>
+        </label>
+        <textarea
+          value={notering}
+          onChange={(e) => {
+            setNotering(e.target.value);
+            setNoteringSparad(false);
+          }}
+          rows={2}
+          maxLength={2000}
+          placeholder="T.ex. ringde 12/7, återkommer nästa vecka…"
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors resize-y"
+        />
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          <button
+            onClick={sparaNotering}
+            disabled={sparar || oandradNotering}
+            className="text-xs bg-[#2D7A4F] text-white px-4 py-1.5 rounded-full hover:bg-[#225f3d] transition-colors disabled:opacity-40 font-medium"
+          >
+            {sparar ? "Sparar…" : "Spara anteckning"}
+          </button>
+          {noteringSparad && <span className="text-xs text-[#2D7A4F] font-medium">✓ Sparat</span>}
+          {item.uppdaterad && (
+            <span className="text-xs text-gray-400">Uppdaterad {formateraDatumTid(item.uppdaterad)}</span>
+          )}
+        </div>
+        {fel && <p className="text-xs text-red-500 mt-2">{fel}</p>}
+      </div>
+    </div>
+  );
+}
+
+function LeadFlik<T extends LeadItem>({
+  endpoint,
+  config,
+  tomText,
+  felText,
+  renderHeader,
+  renderFakta,
+  getMeddelande,
+}: {
+  endpoint: string;
+  config: LeadConfig;
+  tomText: string;
+  felText: string;
+  renderHeader: (item: T) => React.ReactNode;
+  renderFakta: (item: T) => React.ReactNode;
+  getMeddelande: (item: T) => string | null;
+}) {
+  const [items, setItems] = useState<T[]>([]);
   const [laddar, setLaddar] = useState(true);
   const [fel, setFel] = useState("");
 
   useEffect(() => {
-    fetch("/api/offert")
+    fetch(endpoint)
       .then(async (r) => {
         if (!r.ok) {
           const data = await r.json().catch(() => ({}));
-          setFel(data.error ?? "Kunde inte hämta offertförfrågningar");
+          setFel(data.error ?? felText);
           return [];
         }
         return r.json();
       })
       .then((data) => {
-        setOfferter(Array.isArray(data) ? data : []);
+        setItems(Array.isArray(data) ? data : []);
         setLaddar(false);
       })
       .catch(() => {
-        setFel("Kunde inte hämta offertförfrågningar");
+        setFel(felText);
         setLaddar(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function uppdateraItem(id: string, partial: Partial<LeadItem>) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...partial } : it)));
+  }
 
   if (laddar) {
     return (
@@ -765,156 +1022,113 @@ function Offertforfragningar() {
     );
   }
 
-  if (fel) {
-    return (
-      <div className="bg-red-50 text-red-500 rounded-2xl p-6 text-sm">{fel}</div>
-    );
+  if (fel && items.length === 0) {
+    return <div className="bg-red-50 text-red-500 rounded-2xl p-6 text-sm">{fel}</div>;
   }
 
-  if (offerter.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-        <p className="text-gray-400 text-sm">Inga offertförfrågningar ännu.</p>
+        <p className="text-gray-400 text-sm">{tomText}</p>
       </div>
     );
   }
 
+  // Obehandlade överst, sedan aktiva, sedan avslutade; nyast först inom varje grupp
+  const sorterade = [...items].sort((a, b) => {
+    const rankDiff = GRUPP_RANK[leadMeta(config, a.status).grupp] - GRUPP_RANK[leadMeta(config, b.status).grupp];
+    if (rankDiff !== 0) return rankDiff;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   return (
-    <div className="flex flex-col gap-4">
-      {offerter.map((o) => (
-        <div
-          key={o.id}
-          className="bg-white rounded-2xl border border-gray-100 p-6"
-        >
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
-            <div>
-              <h3 className="font-semibold text-[#1a1a1a] text-lg">{o.foretag}</h3>
-              <p className="text-sm text-gray-500">
-                {o.kontaktperson} · {o.stad}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs px-3 py-1 rounded-full bg-[#e8f5ee] text-[#2D7A4F]">
-                {o.status === "ny" ? "Ny" : o.status}
-              </span>
-              <span className="text-xs text-gray-400">
-                {formateraDatum(o.created_at)}
-              </span>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-            <FaktaRad label="E-post" varde={
-              <a href={`mailto:${o.email}`} className="text-[#2D7A4F] hover:underline">{o.email}</a>
-            } />
-            <FaktaRad label="Telefon" varde={
-              <a href={`tel:${o.telefon}`} className="text-[#2D7A4F] hover:underline">{o.telefon}</a>
-            } />
-            <FaktaRad label="Org.nr" varde={o.orgnr ?? "—"} />
-            <FaktaRad label="Antal personer" varde={o.antal_personer != null ? String(o.antal_personer) : "—"} />
-            <FaktaRad label="Inflyttning" varde={o.inflyttning ? formateraDatum(o.inflyttning) : "—"} />
-            <FaktaRad label="Bostadstyp" varde={bostadstypLabel(o.bostadstyp)} />
-          </div>
-
-          {o.meddelande && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Meddelande
-              </p>
-              <p className="text-sm text-gray-700 whitespace-pre-line">{o.meddelande}</p>
-            </div>
-          )}
-        </div>
-      ))}
+    <div>
+      <LeadRaknare config={config} statusar={items.map((i) => i.status)} />
+      {fel && <div className="bg-red-50 text-red-500 rounded-2xl p-4 text-sm mb-4">{fel}</div>}
+      <div className="flex flex-col gap-4">
+        {sorterade.map((item) => (
+          <LeadKort
+            key={item.id}
+            config={config}
+            endpoint={endpoint}
+            item={item}
+            header={renderHeader(item)}
+            fakta={renderFakta(item)}
+            meddelande={getMeddelande(item)}
+            onChange={(partial) => uppdateraItem(item.id, partial)}
+          />
+        ))}
+      </div>
     </div>
+  );
+}
+
+// ─── Flik: Offertförfrågningar (admin) ───────────────────────────────────────
+
+function Offertforfragningar() {
+  return (
+    <LeadFlik<Offert>
+      endpoint="/api/offert"
+      config={OFFERT_CONFIG}
+      tomText="Inga offertförfrågningar ännu."
+      felText="Kunde inte hämta offertförfrågningar"
+      getMeddelande={(o) => o.meddelande}
+      renderHeader={(o) => (
+        <>
+          <h3 className="font-semibold text-[#1a1a1a] text-lg truncate">{o.foretag}</h3>
+          <p className="text-sm text-gray-500">
+            {o.kontaktperson} · {o.stad}
+          </p>
+        </>
+      )}
+      renderFakta={(o) => (
+        <>
+          <FaktaRad label="E-post" varde={
+            <a href={`mailto:${o.email}`} className="text-[#2D7A4F] hover:underline break-all">{o.email}</a>
+          } />
+          <FaktaRad label="Telefon" varde={
+            <a href={`tel:${o.telefon}`} className="text-[#2D7A4F] hover:underline">{o.telefon}</a>
+          } />
+          <FaktaRad label="Org.nr" varde={o.orgnr ?? "—"} />
+          <FaktaRad label="Antal personer" varde={o.antal_personer != null ? String(o.antal_personer) : "—"} />
+          <FaktaRad label="Inflyttning" varde={o.inflyttning ? formateraDatum(o.inflyttning) : "—"} />
+          <FaktaRad label="Bostadstyp" varde={bostadstypLabel(o.bostadstyp)} />
+          <FaktaRad label="Inkom" varde={formateraDatum(o.created_at)} />
+        </>
+      )}
+    />
   );
 }
 
 // ─── Flik: Hyresvärdsanmälningar (admin) ─────────────────────────────────────
 
 function Hyresvardsanmalningar() {
-  const [anmalningar, setAnmalningar] = useState<Hyresvardsanmalan[]>([]);
-  const [laddar, setLaddar] = useState(true);
-  const [fel, setFel] = useState("");
-
-  useEffect(() => {
-    fetch("/api/hyresvardar")
-      .then(async (r) => {
-        if (!r.ok) {
-          const data = await r.json().catch(() => ({}));
-          setFel(data.error ?? "Kunde inte hämta anmälningar");
-          return [];
-        }
-        return r.json();
-      })
-      .then((data) => {
-        setAnmalningar(Array.isArray(data) ? data : []);
-        setLaddar(false);
-      })
-      .catch(() => {
-        setFel("Kunde inte hämta anmälningar");
-        setLaddar(false);
-      });
-  }, []);
-
-  if (laddar) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-        <div className="w-6 h-6 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin mx-auto" />
-      </div>
-    );
-  }
-
-  if (fel) {
-    return (
-      <div className="bg-red-50 text-red-500 rounded-2xl p-6 text-sm">{fel}</div>
-    );
-  }
-
-  if (anmalningar.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-        <p className="text-gray-400 text-sm">Inga hyresvärdsanmälningar ännu.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      {anmalningar.map((a) => (
-        <div
-          key={a.id}
-          className="bg-white rounded-2xl border border-gray-100 p-6"
-        >
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
-            <div>
-              <h3 className="font-semibold text-[#1a1a1a] text-lg">{a.namn}</h3>
-              {a.stad && <p className="text-sm text-gray-500">{a.stad}</p>}
-            </div>
-            <span className="text-xs text-gray-400">{formateraDatum(a.created_at)}</span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-            <FaktaRad label="E-post" varde={
-              <a href={`mailto:${a.email}`} className="text-[#2D7A4F] hover:underline">{a.email}</a>
-            } />
-            <FaktaRad label="Telefon" varde={
-              a.telefon ? <a href={`tel:${a.telefon}`} className="text-[#2D7A4F] hover:underline">{a.telefon}</a> : "—"
-            } />
-            <FaktaRad label="Adress" varde={a.adress ?? "—"} />
-          </div>
-
-          {a.meddelande && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Meddelande
-              </p>
-              <p className="text-sm text-gray-700 whitespace-pre-line">{a.meddelande}</p>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+    <LeadFlik<Hyresvardsanmalan>
+      endpoint="/api/hyresvardar"
+      config={HYRESVARD_CONFIG}
+      tomText="Inga hyresvärdsanmälningar ännu."
+      felText="Kunde inte hämta anmälningar"
+      getMeddelande={(a) => a.meddelande}
+      renderHeader={(a) => (
+        <>
+          <h3 className="font-semibold text-[#1a1a1a] text-lg truncate">{a.namn}</h3>
+          {a.stad && <p className="text-sm text-gray-500">{a.stad}</p>}
+        </>
+      )}
+      renderFakta={(a) => (
+        <>
+          <FaktaRad label="E-post" varde={
+            <a href={`mailto:${a.email}`} className="text-[#2D7A4F] hover:underline break-all">{a.email}</a>
+          } />
+          <FaktaRad label="Telefon" varde={
+            a.telefon ? <a href={`tel:${a.telefon}`} className="text-[#2D7A4F] hover:underline">{a.telefon}</a> : "—"
+          } />
+          <FaktaRad label="Adress" varde={a.adress ?? "—"} />
+          <FaktaRad label="Inkom" varde={formateraDatum(a.created_at)} />
+        </>
+      )}
+    />
   );
 }
 

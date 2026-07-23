@@ -45,7 +45,9 @@ export async function POST(request: Request) {
       console.error("[email] Uncaught hyresvärdsnotis-fel:", err)
     );
 
-    return Response.json(anmalan, { status: 201 });
+    // Vitlistat svar — interna fält (status, intern_notering) får aldrig
+    // lämna servern på detta publika endpoint
+    return Response.json({ ok: true, id: anmalan.id }, { status: 201 });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Serverfel" }, { status: 500 });

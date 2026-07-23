@@ -418,6 +418,45 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 15
+
+### Lead-uppföljning för offert + hyresvärd (admin-arbetsflöde)
+
+DATAMODELL (additiv migration 20260723114533_lead_uppfoljning):
+- Offertforfragan: intern_notering (@db.Text) + uppdaterad (DateTime?).
+  Det BEFINTLIGA status-fältet återanvänds — default bytt "ny" → "obehandlad".
+  Äldre rader kan ha legacy "ny"; UI/räknare/sortering behandlar "ny" (och
+  varje okänt värde) som "obehandlad" → syns som lead att ta tag i. Backfillar inget.
+- Hyresvardsanmalan: nya status (default "obehandlad") + intern_notering + uppdaterad.
+- Statusvärden: offert = obehandlad|kontaktad|offert_skickad|vunnen|forlorad,
+  hyresvärd = obehandlad|kontaktad|pagaende|avtal_klart|ej_aktuell.
+
+API (admin-skyddat, ny PATCH):
+- PATCH /api/offert/[id] och /api/hyresvardar/[id] — requireAdmin, Zod-validerad
+  (enum-status, notering max 2000), sätter uppdaterad=now(), 404 om saknas.
+  Ingen mejl skickas (interna fält).
+- PII: publika POST-svaren (/api/offert, /api/hyresvardar) vitlistades till
+  { ok, id } — status/intern_notering läcker aldrig ut. Publika endpoints rör
+  inte dessa modeller alls i övrigt. Mejlutskicken orörda (bara svarsformen ändrad).
+
+ADMIN-UI (delad LeadFlik/LeadKort-infrastruktur, båda flikarna):
+- Räknare högst upp: grön framträdande pill "N obehandlade — kräver handling"
+  när >0, annars "Inga obehandlade just nu"; övriga statusar som dämpad text.
+- Sortering: obehandlade överst → aktiva → avslutade sist; nyast först i grupp.
+  Avslutade tonas ner (opacity-60).
+- Färgkodad badge: obehandlad=grön accent, kontaktad/pågående=amber,
+  offert_skickad=blå, vunnen/avtal_klart=fylld grön, förlorad/ej_aktuell=grå.
+- Status-dropdown med svenska etiketter, optimistisk uppdatering + rollback vid fel.
+- Intern anteckning per ärende (textruta, Spara + "✓ Sparat", "Uppdaterad <tid>").
+- Kontaktgenvägar: tel:/mailto:-länkar. Långa meddelanden: "Visa mer".
+  Mobilanpassat. Ny hjälpare formateraDatumTid i lib/datum.ts.
+
+VERIFIERAT: tsc + build gröna. Testsviten (npm run test:api) 7/7 — inga
+regressioner. Riktad verifiering (15 checks): vitlistade POST-svar, PATCH
+401/403-skydd, status+notering sparas, ogiltig status/notering>2000 → 400.
+
+PÅMINNELSE: starta om dev-servern (npx prisma generate kördes) innan test.
+
 ## Dag 14
 
 ### ROOT CAUSE: statusmejl skickas inte i PRODUKTION (fungerade lokalt)

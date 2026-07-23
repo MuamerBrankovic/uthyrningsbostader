@@ -33,6 +33,10 @@ model Hyresvardsanmalan {
   stad        String?
   adress      String?
   meddelande  String?
+  // Lead-uppföljning (admin) — obehandlad | kontaktad | pagaende | avtal_klart | ej_aktuell
+  status          String    @default("obehandlad")
+  intern_notering String?   @db.Text
+  uppdaterad      DateTime?
   created_at  DateTime @default(now())
 }
 
@@ -102,6 +106,10 @@ model Offertforfragan {
   inflyttning     DateTime?
   bostadstyp      String?
   meddelande      String?
-  status          String    @default("ny")
+  // Lead-uppföljning (admin) — obehandlad | kontaktad | offert_skickad | vunnen | forlorad
+  // (äldre rader kan ha legacy-värdet "ny" — UI behandlar det som "obehandlad")
+  status          String    @default("obehandlad")
+  intern_notering String?   @db.Text
+  uppdaterad      DateTime?
   created_at      DateTime  @default(now())
 }

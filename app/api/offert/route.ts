@@ -66,7 +66,9 @@ export async function POST(request: Request) {
       console.error("[email] Uncaught offertmail-fel:", err)
     );
 
-    return Response.json(offert, { status: 201 });
+    // Vitlistat svar — interna fält (status, intern_notering) får aldrig
+    // lämna servern på detta publika endpoint
+    return Response.json({ ok: true, id: offert.id }, { status: 201 });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Serverfel" }, { status: 500 });
