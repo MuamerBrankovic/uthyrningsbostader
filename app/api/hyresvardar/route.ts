@@ -39,8 +39,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // Adminnotis — får ALDRIG blockera att anmälan sparats
-    skickaHyresvardsnotisMail(anmalan).catch((err) =>
+    // Adminnotis — awaitas så Vercel inte river funktionen innan mejlet
+    // skickats; .catch bevarar fail-safe: ett mejlfel blockerar inte att anmälan sparats.
+    await skickaHyresvardsnotisMail(anmalan).catch((err) =>
       console.error("[email] Uncaught hyresvärdsnotis-fel:", err)
     );
 

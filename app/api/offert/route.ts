@@ -60,8 +60,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // Mail får ALDRIG blockera sparandet
-    skickaOffertmail(offert).catch((err) =>
+    // Mail awaitas så Vercel inte river funktionen innan det skickats;
+    // .catch bevarar fail-safe: ett mejlfel blockerar inte att offerten sparats.
+    await skickaOffertmail(offert).catch((err) =>
       console.error("[email] Uncaught offertmail-fel:", err)
     );
 

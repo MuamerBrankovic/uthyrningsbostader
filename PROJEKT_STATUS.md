@@ -420,34 +420,39 @@ SMÅFIXAR:
 
 ## Dag 14
 
-### Felsökning: statusmejl (Grupp 2 Del 1A)
+### ROOT CAUSE: statusmejl skickas inte i PRODUKTION (fungerade lokalt)
 
-Två rapporter undersöktes empiriskt (dev-server + repro-script + loggar).
+PROBLEMET: alla fyra mejlutskick var fire-and-forget — promisen skapades
+med .catch() men awaitades ALDRIG före return Response.json(). På Vercel
+fryses/rivs serverless-funktionen så fort svaret returnerats, så en
+icke-awaitad promise hinner ofta inte fullborda HTTP-anropet till Resend.
+Lokalt lever Node-processen kvar och hinner klart → fungerade på localhost
+men misslyckades tyst i produktion.
 
-1) "Statusmejl skickas inte / terminalen tyst":
-   - ROTORSAK: en GAMMAL dev-server låg kvar på port 3000 (PID 31204) med
-     kod från före Grupp 2 — den hade ingen statusmejl-logik alls → inget
-     anrop, ingen logg. (Samma klass av stale-server-problem som tidigare.)
-   - Dessutom en latent defekt: Resend-SDK:n KASTAR inte vid API-fel, den
-     returnerar { data, error }. Koden kollade aldrig error → ett nekat
-     utskick hade försvunnit helt tyst. Nu finns resendFel()-koll på ALLA
-     mejl + tydliga loggar (skickat/nekat/skippat).
+VARFÖR FÖRFRÅGAN "FUNGERAR" MEN STATUS INTE: samma flaw i båda — skillnaden
+är container-livscykel, inte kodstruktur. Publika POST /api/bokningar
+träffas ofta → containern hålls varm → frusen bakgrundspromise återupptas
+vid nästa request och hinner skicka. Admin-PATCH /api/bokningar/[id] träffas
+sällan → containern blir kall och rivs innan promisen körts → mejlet tappas.
+Förfrågan-mejlet var alltså heller INTE garanterat.
 
-2) "Statusmejl går till admin i stället för kund" (verifierat i Resend):
-   - Granskning av alla 6 send-anrop: samtliga to:-fält korrekta
-     (kundmejl to=kund, adminnotiser to=ADMIN_EMAIL).
-   - Empiriskt repro med DISTINKTA adresser (kund != admin): statusmejlets
-     to = kundadressen, inte admin. Logiskt bevis: förfrågan-mejlet och
-     statusmejlet läser SAMMA fält (bokning.email) — går det ena rätt går
-     det andra rätt.
-   - Statusmejlet har reply-to = ADMIN_EMAIL by design (kund kan svara er).
-     Trolig förväxling: reply-to-fältet, eller admin-notisen "Ny
-     bokningsförfrågan" (separat mejl, korrekt to=admin), lästes som mottagare.
-   - Åtgärd: loggarna visar nu BÅDE to och reply-to explicit, så framtida
-     verifiering blir entydig. Ingen kodändring av mottagare behövdes —
-     koden var korrekt.
+VARFÖR LOGGEN "LJÖG": route-loggen "skickar statusmejl till X" skrivs
+synkront FÖRE fire-and-forget-anropet, oavsett utfall. (Funktionen i
+lib/email.ts är korrekt — loggar "skickat" först efter awaitad send +
+felkoll — men hann inte köra klart i prod.)
 
-Inga ändringar av statuslogik/transaktion/mottagaradresser. tsc + build gröna.
+FIX: await på alla fyra utskicken (behåll .catch så mejlfel inte blockerar
+DB-operationen logiskt, men vänta in utskicket före svaret):
+- PATCH /api/bokningar/[id] (skickaBokningsstatusMail)
+- POST /api/bokningar (skickaBokningsmail)
+- POST /api/offert (skickaOffertmail)
+- POST /api/hyresvardar (skickaHyresvardsnotisMail)
+Pris: ~0,2–0,5 s extra svarstid per anrop — acceptabelt.
+
+Env: RESEND_API_KEY/AVSANDAR_EMAIL är bevisligen satta i Production (annars
+hade förfrågan-mejlet inte fungerat) — inte orsaken. Ingen ny env behövs.
+Kan inte reproduceras lokalt (frysningen sker bara på Vercel). Verifieras
+efter deploy. tsc + build gröna.
 
 ## Dag 13
 

@@ -185,8 +185,9 @@ export async function POST(request: Request) {
 
     const { bokning, rum } = resultat;
 
-    // Bekräftelsemail — får ALDRIG blockera success-svaret
-    skickaBokningsmail(
+    // Bekräftelsemail — awaitas så Vercel inte river funktionen innan mejlet
+    // skickats. .catch bevarar fail-safe: ett mejlfel blockerar inte success-svaret.
+    await skickaBokningsmail(
       bokning,
       { namn: rum.namn, manadshyra: rum.manadshyra },
       rum.bostad

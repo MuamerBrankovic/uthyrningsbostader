@@ -136,7 +136,11 @@ export async function PATCH(
     const { bokning, tidigareStatus } = resultat;
 
     // Kundmejl vid faktisk statusändring till bekräftad/avbokad.
-    // Fire-and-forget: mejlfel får ALDRIG blockera att statusen sparats.
+    // MÅSTE awaitas: på Vercel fryses/rivs serverless-funktionen efter att
+    // svaret returnerats, så en icke-awaitad (fire-and-forget) promise hinner
+    // ofta inte skicka mejlet — och loggen kan ändå säga "skickat". Fail-safe
+    // bevaras av .catch: ett mejlfel gör inte statusändringen till ett felsvar,
+    // men vi VÄNTAR in utskicket innan svaret går.
     const nyStatus = data.status;
     if (
       (nyStatus === "bekraftad" || nyStatus === "avbokad") &&
@@ -145,7 +149,7 @@ export async function PATCH(
       console.log(
         `[email] Statusändring ${tidigareStatus} → ${nyStatus} på bokning ${bokning.id} — skickar statusmejl till ${bokning.email}`
       );
-      skickaBokningsstatusMail(
+      await skickaBokningsstatusMail(
         bokning,
         { namn: bokning.rum.namn, manadshyra: bokning.rum.manadshyra },
         bokning.rum.bostad,
