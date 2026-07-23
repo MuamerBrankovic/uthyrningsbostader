@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { ApiFel } from "@/lib/apifel";
 import { lasJson, validera, bokningPatchSchema } from "@/lib/validering";
+import { skickaBokningsstatusMail } from "@/lib/email";
 
 export async function PATCH(
   request: Request,
@@ -57,9 +58,9 @@ export async function PATCH(
 
     // Kontroll + uppdatering sker atomärt (Serializable) så att två admins
     // inte kan bekräfta överlappande bokningar samtidigt
-    let bokning;
+    let resultat;
     try {
-      bokning = await prisma.$transaction(
+      resultat = await prisma.$transaction(
         async (tx) => {
           const befintlig = await tx.bokning.findUnique({ where: { id } });
           if (!befintlig) throw new ApiFel(404, "Bokning hittades inte");
@@ -99,7 +100,7 @@ export async function PATCH(
             }
           }
 
-          return tx.bokning.update({
+          const uppdaterad = await tx.bokning.update({
             where: { id },
             data,
             include: {
@@ -108,11 +109,13 @@ export async function PATCH(
                   id: true,
                   namn: true,
                   manadshyra: true,
-                  bostad: { select: { id: true, namn: true, stadsdel: true } },
+                  bostad: { select: { id: true, namn: true, stadsdel: true, adress: true } },
                 },
               },
             },
           });
+
+          return { bokning: uppdaterad, tidigareStatus: befintlig.status };
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       );
@@ -128,6 +131,30 @@ export async function PATCH(
         );
       }
       throw err;
+    }
+
+    const { bokning, tidigareStatus } = resultat;
+
+    // Kundmejl vid faktisk statusändring till bekräftad/avbokad.
+    // Fire-and-forget: mejlfel får ALDRIG blockera att statusen sparats.
+    const nyStatus = data.status;
+    if (
+      (nyStatus === "bekraftad" || nyStatus === "avbokad") &&
+      nyStatus !== tidigareStatus
+    ) {
+      console.log(
+        `[email] Statusändring ${tidigareStatus} → ${nyStatus} på bokning ${bokning.id} — skickar statusmejl till ${bokning.email}`
+      );
+      skickaBokningsstatusMail(
+        bokning,
+        { namn: bokning.rum.namn, manadshyra: bokning.rum.manadshyra },
+        bokning.rum.bostad,
+        nyStatus
+      ).catch((err) => console.error("[email] Uncaught statusmail-fel:", err));
+    } else if (nyStatus !== undefined) {
+      console.log(
+        `[email] Inget statusmejl för bokning ${bokning.id}: status ${tidigareStatus} → ${nyStatus} (oförändrad eller ej mejlgrundande)`
+      );
     }
 
     return Response.json(bokning);

@@ -58,6 +58,14 @@ function getConfig() {
   };
 }
 
+// Resend-SDK:n KASTAR INTE vid API-fel — den returnerar { data, error }.
+// error-fältet måste kontrolleras, annars försvinner nekade utskick spårlöst.
+function resendFel(svar: unknown): string | null {
+  const s = svar as { error?: { name?: string; message?: string } | null };
+  if (!s?.error) return null;
+  return `${s.error.name ?? "fel"}: ${s.error.message ?? "okänt fel"}`;
+}
+
 function avtalstypLabel(t: string): string {
   if (t === "premium") return "Premium";
   if (t === "medlemskap") return "Medlemskap";
@@ -257,10 +265,250 @@ export async function skickaBokningsmail(
         })
       );
     }
-    await Promise.all(tasks);
+    const svar = await Promise.all(tasks);
+    const fel = svar.map(resendFel).filter((f): f is string => f !== null);
+    if (fel.length > 0) {
+      console.error("[email] Bokningsmail nekades av Resend:", fel.join(" | "));
+      return { ok: false, error: fel.join(" | ") };
+    }
+    console.log(
+      `[email] Bokningsmail skickat — kundbekräftelse to=${bokning.email}${adminEmail ? `, adminnotis to=${adminEmail}` : ""}`
+    );
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka bokningsmail:", err);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ─── Statusmail: bokning bekräftad/avbokad ──────────────────────────────────
+
+type StatusBokningData = {
+  id: string;
+  kund_kontaktperson: string;
+  email: string;
+  startdatum: Date;
+  slutdatum: Date | null;
+  avtalstyp: string;
+};
+
+export async function skickaBokningsstatusMail(
+  bokning: StatusBokningData,
+  rum: RumData,
+  bostad: BostadData,
+  nyStatus: "bekraftad" | "avbokad"
+): Promise<{ ok: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[email] RESEND_API_KEY saknas — hoppar över statusmail");
+    return { ok: false, error: "RESEND_API_KEY saknas" };
+  }
+
+  // Skicka bara till en adress som ser ut som en e-postadress
+  if (!bokning.email || !bokning.email.includes("@")) {
+    console.warn(
+      `[email] Statusmejl hoppas över — ogiltig mottagaradress på bokning ${bokning.id}:`,
+      bokning.email
+    );
+    return { ok: false, error: "Ogiltig mottagaradress" };
+  }
+
+  const { from, adminEmail } = getConfig();
+  const plats = bostad.stadsdel ?? bostad.adress ?? bostad.namn;
+  const startdatum = formateraDatum(bokning.startdatum);
+  const slutdatum = bokning.slutdatum ? formateraDatum(bokning.slutdatum) : "Tills vidare";
+
+  let amne: string;
+  let html: string;
+  let text: string;
+
+  if (nyStatus === "bekraftad") {
+    amne = "Din bokningsförfrågan är bekräftad — ReLoka";
+    html = wrapper(`
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;">
+        Din bokningsförfrågan är bekräftad
+      </h1>
+      <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+        Hej ${escapeHtml(bokning.kund_kontaktperson)}. Vi har bekräftat er bokning.
+        Vi återkommer inom kort med kontrakt och praktiska detaljer inför inflyttningen.
+      </p>
+
+      <div style="background:${ACCENT};border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${GRON};margin-bottom:8px;">
+          Er bokning
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          ${rad("Rum", escapeHtml(rum.namn))}
+          ${rad("Bostad", escapeHtml(bostad.namn))}
+          ${rad("Plats", escapeHtml(plats))}
+          ${rad("Hyra", `${rum.manadshyra.toLocaleString("sv-SE")} kr/mån`)}
+          ${rad("Startdatum", startdatum)}
+          ${rad("Slutdatum", slutdatum)}
+          ${rad("Avtalstyp", avtalstypLabel(bokning.avtalstyp))}
+        </table>
+      </div>
+
+      <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Frågor? Kontakta oss direkt:</p>
+      <p style="margin:0;font-size:14px;">
+        <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+      </p>
+    `);
+    text = [
+      "Din bokningsförfrågan är bekräftad",
+      "",
+      `Hej ${bokning.kund_kontaktperson}. Vi har bekräftat er bokning. Vi återkommer inom kort med kontrakt och praktiska detaljer inför inflyttningen.`,
+      "",
+      "Er bokning",
+      `Rum: ${rum.namn}`,
+      `Bostad: ${bostad.namn}`,
+      `Plats: ${visa(plats)}`,
+      `Hyra: ${rum.manadshyra.toLocaleString("sv-SE")} kr/mån`,
+      `Startdatum: ${startdatum}`,
+      `Slutdatum: ${slutdatum}`,
+      `Avtalstyp: ${avtalstypLabel(bokning.avtalstyp)}`,
+      "",
+      "Frågor? Kontakta oss direkt: info@reloka.se",
+      TEXT_FOT,
+    ].join("\n");
+  } else {
+    amne = "Angående din bokningsförfrågan — ReLoka";
+    html = wrapper(`
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;">
+        Angående din bokningsförfrågan
+      </h1>
+      <p style="margin:0 0 16px;color:#6b7280;font-size:14px;line-height:1.6;">
+        Hej ${escapeHtml(bokning.kund_kontaktperson)}. Din bokningsförfrågan för
+        ${escapeHtml(rum.namn)} i ${escapeHtml(bostad.namn)} har avbokats och kunde
+        tyvärr inte genomföras den här gången.
+      </p>
+      <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+        Ni är varmt välkomna att höra av er igen — vi hjälper gärna till att hitta
+        ett annat boende eller ett annat datum som passar.
+      </p>
+
+      <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Kontakta oss direkt:</p>
+      <p style="margin:0;font-size:14px;">
+        <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+      </p>
+    `);
+    text = [
+      "Angående din bokningsförfrågan",
+      "",
+      `Hej ${bokning.kund_kontaktperson}. Din bokningsförfrågan för ${rum.namn} i ${bostad.namn} har avbokats och kunde tyvärr inte genomföras den här gången.`,
+      "",
+      "Ni är varmt välkomna att höra av er igen — vi hjälper gärna till att hitta ett annat boende eller ett annat datum som passar.",
+      "",
+      "Kontakta oss direkt: info@reloka.se",
+      TEXT_FOT,
+    ].join("\n");
+  }
+
+  try {
+    const svar = await resend.emails.send({
+      from,
+      to: bokning.email,
+      // Reply-to till bemannad inkorg — svar på no-reply ska inte studsa
+      ...(adminEmail ? { replyTo: adminEmail } : {}),
+      subject: amne,
+      html,
+      text,
+    });
+    const fel = resendFel(svar);
+    if (fel) {
+      console.error(
+        `[email] Statusmejl (${nyStatus}) till ${bokning.email} NEKADES av Resend:`,
+        fel
+      );
+      return { ok: false, error: fel };
+    }
+    console.log(
+      `[email] Statusmejl (${nyStatus}) skickat — to=${bokning.email}, reply-to=${adminEmail || "(ingen)"}`
+    );
+    return { ok: true };
+  } catch (err) {
+    console.error("[email] Misslyckades skicka statusmail:", err);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ─── Adminnotis: ny hyresvärdsanmälan ───────────────────────────────────────
+
+type HyresvardsanmalanData = {
+  id: string;
+  namn: string;
+  telefon: string | null;
+  email: string;
+  stad: string | null;
+  adress: string | null;
+  meddelande: string | null;
+};
+
+export async function skickaHyresvardsnotisMail(
+  anmalan: HyresvardsanmalanData
+): Promise<{ ok: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[email] RESEND_API_KEY saknas — hoppar över hyresvärdsnotis");
+    return { ok: false, error: "RESEND_API_KEY saknas" };
+  }
+
+  const { from, adminEmail } = getConfig();
+  if (!adminEmail) {
+    console.warn("[email] ADMIN_EMAIL saknas — hoppar över hyresvärdsnotis");
+    return { ok: false, error: "ADMIN_EMAIL saknas" };
+  }
+
+  const html = wrapper(`
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;">
+      Ny hyresvärdsanmälan
+    </h1>
+    <p style="margin:0 0 24px;color:#6b7280;font-size:13px;">
+      Från ${escapeHtml(anmalan.namn)}${anmalan.stad ? ` (${escapeHtml(anmalan.stad)})` : ""}
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;">
+      ${rad("Namn", escapeHtml(anmalan.namn))}
+      ${rad("E-post", escapeHtml(anmalan.email))}
+      ${rad("Telefon", escapeHtml(anmalan.telefon))}
+      ${rad("Stad", escapeHtml(anmalan.stad))}
+      ${rad("Adress", escapeHtml(anmalan.adress))}
+      ${rad("Meddelande", anmalan.meddelande ? escapeHtml(anmalan.meddelande).replace(/\n/g, "<br/>") : "—")}
+      ${rad("Anmälan-ID", anmalan.id)}
+    </table>
+  `);
+
+  const text = [
+    `Ny hyresvärdsanmälan från ${anmalan.namn}`,
+    "",
+    `Namn: ${anmalan.namn}`,
+    `E-post: ${anmalan.email}`,
+    `Telefon: ${visa(anmalan.telefon)}`,
+    `Stad: ${visa(anmalan.stad)}`,
+    `Adress: ${visa(anmalan.adress)}`,
+    `Meddelande: ${visa(anmalan.meddelande)}`,
+    `Anmälan-ID: ${anmalan.id}`,
+    TEXT_FOT,
+  ].join("\n");
+
+  try {
+    const svar = await resend.emails.send({
+      from,
+      to: adminEmail,
+      // Svar på notisen går direkt till anmälaren
+      replyTo: anmalan.email,
+      subject: `Ny hyresvärdsanmälan från ${anmalan.namn}`,
+      html,
+      text,
+    });
+    const fel = resendFel(svar);
+    if (fel) {
+      console.error("[email] Hyresvärdsnotis nekades av Resend:", fel);
+      return { ok: false, error: fel };
+    }
+    console.log(`[email] Hyresvärdsnotis skickad till ${adminEmail}`);
+    return { ok: true };
+  } catch (err) {
+    console.error("[email] Misslyckades skicka hyresvärdsnotis:", err);
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -390,7 +638,15 @@ export async function skickaOffertmail(
         })
       );
     }
-    await Promise.all(tasks);
+    const svar = await Promise.all(tasks);
+    const fel = svar.map(resendFel).filter((f): f is string => f !== null);
+    if (fel.length > 0) {
+      console.error("[email] Offertmail nekades av Resend:", fel.join(" | "));
+      return { ok: false, error: fel.join(" | ") };
+    }
+    console.log(
+      `[email] Offertmail skickat — kundbekräftelse to=${offert.email}${adminEmail ? `, adminnotis to=${adminEmail}` : ""}`
+    );
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka offertmail:", err);

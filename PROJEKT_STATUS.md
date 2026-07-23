@@ -418,6 +418,91 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 14
+
+### Felsökning: statusmejl (Grupp 2 Del 1A)
+
+Två rapporter undersöktes empiriskt (dev-server + repro-script + loggar).
+
+1) "Statusmejl skickas inte / terminalen tyst":
+   - ROTORSAK: en GAMMAL dev-server låg kvar på port 3000 (PID 31204) med
+     kod från före Grupp 2 — den hade ingen statusmejl-logik alls → inget
+     anrop, ingen logg. (Samma klass av stale-server-problem som tidigare.)
+   - Dessutom en latent defekt: Resend-SDK:n KASTAR inte vid API-fel, den
+     returnerar { data, error }. Koden kollade aldrig error → ett nekat
+     utskick hade försvunnit helt tyst. Nu finns resendFel()-koll på ALLA
+     mejl + tydliga loggar (skickat/nekat/skippat).
+
+2) "Statusmejl går till admin i stället för kund" (verifierat i Resend):
+   - Granskning av alla 6 send-anrop: samtliga to:-fält korrekta
+     (kundmejl to=kund, adminnotiser to=ADMIN_EMAIL).
+   - Empiriskt repro med DISTINKTA adresser (kund != admin): statusmejlets
+     to = kundadressen, inte admin. Logiskt bevis: förfrågan-mejlet och
+     statusmejlet läser SAMMA fält (bokning.email) — går det ena rätt går
+     det andra rätt.
+   - Statusmejlet har reply-to = ADMIN_EMAIL by design (kund kan svara er).
+     Trolig förväxling: reply-to-fältet, eller admin-notisen "Ny
+     bokningsförfrågan" (separat mejl, korrekt to=admin), lästes som mottagare.
+   - Åtgärd: loggarna visar nu BÅDE to och reply-to explicit, så framtida
+     verifiering blir entydig. Ingen kodändring av mottagare behövdes —
+     koden var korrekt.
+
+Inga ändringar av statuslogik/transaktion/mottagaradresser. tsc + build gröna.
+
+## Dag 13
+
+### Grupp 2, DEL 1 — mejl vid statusändring + hyresvärdsnotis
+
+KUNDMEJL VID BEKRÄFTELSE/AVBOKNING (lib/email.ts):
+- Ny funktion skickaBokningsstatusMail(bokning, rum, bostad, nyStatus)
+  med html + text-version, samma stil som övriga mejl
+- Bekräftad: "Din bokningsförfrågan är bekräftad" — sammanfattning (rum,
+  bostad, plats, hyra, startdatum, slutdatum/"Tills vidare", avtalstyp)
+  + vad som händer härnäst (kontrakt/inflytt) + kontaktuppgifter
+- Avbokad: "Angående din bokningsförfrågan" — neutral, artig, välkomna åter
+- Reply-to = ADMIN_EMAIL; skickas bara om bokningen har giltig e-postadress
+- Inkopplat i PATCH /api/bokningar/[id]: skickas EFTER lyckad DB-uppdatering,
+  endast när status FAKTISKT ändras till bekraftad/avbokad (inte vid t.ex.
+  bara slutdatum-ändring eller om samma status sparas igen)
+- Fail-safe: fire-and-forget med .catch — mejlfel blockerar aldrig statusändringen
+
+ADMINNOTIS VID NY HYRESVÄRDSANMÄLAN (tidigare sparades leads osedda):
+- Ny funktion skickaHyresvardsnotisMail(anmalan) — html + text, till
+  ADMIN_EMAIL, ämne "Ny hyresvärdsanmälan från {namn}", alla fält
+- Reply-to = anmälarens e-post (svara direkt från notisen)
+- Inkopplat i POST /api/hyresvardar efter att anmälan sparats, fail-safe
+
+Verifierat: tsc + npm run build gröna. Auth, dubbelbokningsskydd, Zod och
+kontrakt/faktura orörda.
+
+### Grupp 2, DEL 2 — automatisk API-testsvit
+
+- Ny fil tests/api.test.js (Nodes inbyggda testrunner) + npm-script
+  "test:api". Körning: starta dev-servern (npm run dev) i ett fönster,
+  kör `npm run test:api` i ett annat.
+- 7 test som bevisar de kritiska reglerna:
+  1. Roll-injection omöjlig (registrera med roll:"admin" → hyresgast,
+     verifierat i både API-svar och databas)
+  2. Ingen PII/kontrakt_url i publika svar (bostader, bostader/[id],
+     rum/[id]) — bokningsobjekt är exakt vitlistan id/startdatum/slutdatum/status
+  3. Förfrågan blockerar inte rum (syns inte publikt, andra förfrågan tillåts)
+  4. Dubbelbokningsskydd: överlappande bekräftelse → 409,
+     icke-överlappande → 200
+  5. Skräpdata → 400 (aldrig 500): trasig JSON, ogiltig telefon, e-post
+     som siffra, namn som objekt, månadshyra "abc", påhittad status
+  6. Mina bokningar-isolering: användare ser bara egna bokningar
+     (anvandare_id), inga kontraktfält, 401 utloggad
+  7. Admin-skydd: bostader/rum/upload/kontrakt/alla-bokningar/PATCH →
+     401 utan inloggning, 403 som hyresgast
+- Självstädande: skapar egen testdata ([TEST]-bostad, @test.reloka.internal-
+  användare, engångs-admin med slumpat lösenord direkt i DB) och raderar
+  allt efteråt + förstädar skräp från kraschade körningar. Verifierat:
+  0 testrader kvar i databasen efter körning.
+- Rate-limitern kringgås i test via slumpad x-forwarded-for per körning
+  (fungerar endast lokalt — produktionsskyddet påverkas inte)
+- Resultat: 7/7 pass, två körningar i rad (omkörningar fungerar)
+- Inga riktiga lösenord/hemligheter i testkoden
+
 ## Dag 12
 
 ### Innehållsstädning (trovärdighet/juridik)

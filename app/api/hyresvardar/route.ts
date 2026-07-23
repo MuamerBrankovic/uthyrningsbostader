@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { lasJson, validera, hyresvardSchema } from "@/lib/validering";
+import { skickaHyresvardsnotisMail } from "@/lib/email";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
         meddelande: meddelande ?? null,
       },
     });
+
+    // Adminnotis — får ALDRIG blockera att anmälan sparats
+    skickaHyresvardsnotisMail(anmalan).catch((err) =>
+      console.error("[email] Uncaught hyresvärdsnotis-fel:", err)
+    );
 
     return Response.json(anmalan, { status: 201 });
   } catch (err) {

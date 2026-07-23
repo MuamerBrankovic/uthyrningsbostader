@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:api": "node --test tests/api.test.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
