@@ -68,9 +68,11 @@ export default function Registrera() {
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
 
           <div className="mb-5">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Fullständigt namn</label>
+            <label htmlFor="reg-namn" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Fullständigt namn</label>
             <input
+              id="reg-namn"
               type="text"
+              autoComplete="name"
               placeholder="Anna Svensson"
               value={namn}
               onChange={(e) => setNamn(e.target.value)}
@@ -79,9 +81,11 @@ export default function Registrera() {
           </div>
 
           <div className="mb-5">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">E-postadress</label>
+            <label htmlFor="reg-email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">E-postadress</label>
             <input
+              id="reg-email"
               type="email"
+              autoComplete="email"
               placeholder="din@email.se"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -90,9 +94,11 @@ export default function Registrera() {
           </div>
 
           <div className="mb-6">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Lösenord</label>
+            <label htmlFor="reg-losenord" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Lösenord</label>
             <input
+              id="reg-losenord"
               type="password"
+              autoComplete="new-password"
               placeholder="Minst 8 tecken"
               value={losenord}
               onChange={(e) => setLosenord(e.target.value)}

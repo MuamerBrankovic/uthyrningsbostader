@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Bildgalleri from "@/app/components/Bildgalleri";
@@ -22,7 +22,6 @@ type Rum = {
   kvm: number | null;
   manadshyra: number;
   moblering: string[];
-  status: string;
   bokningar: Bokning[];
   bostad: {
     id: string;
@@ -141,6 +140,47 @@ function BokningsModal({
   });
   const [skickar, setSkickar] = useState(false);
   const [fel, setFel] = useState("");
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Tillgänglighet: flytta in fokus när modalen öppnas, fånga Tab inom den
+  // (fokusfälla), Escape stänger, och återlämna fokus till utlösaren vid stängning.
+  useEffect(() => {
+    const forraFokus = document.activeElement as HTMLElement | null;
+    const el = modalRef.current;
+    const fokuserbara = () =>
+      Array.from(
+        el?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((x) => x.offsetParent !== null);
+
+    el?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const f = fokuserbara();
+      if (f.length === 0) return;
+      const forsta = f[0];
+      const sista = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === forsta) {
+        e.preventDefault();
+        sista.focus();
+      } else if (!e.shiftKey && document.activeElement === sista) {
+        e.preventDefault();
+        forsta.focus();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      forraFokus?.focus();
+    };
+  }, [onClose]);
 
   function update(field: keyof BokningForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -175,12 +215,17 @@ function BokningsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bokning-titel"
+    >
+      <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
-            <h2 className="font-bold text-[#1a1a1a]">Boka {rum.namn}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{rum.bostad.namn}</p>
+            <h2 id="bokning-titel" className="font-bold text-[#1a1a1a]">Boka {rum.namn}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{rum.bostad.namn}</p>
           </div>
           <button
             onClick={onClose}
@@ -196,70 +241,70 @@ function BokningsModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-foretag" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Företag <span className="normal-case font-normal">(valfritt)</span>
             </label>
-            <input type="text" placeholder="AB Exempelföretag" value={form.kund_foretag}
+            <input id="bm-foretag" type="text" placeholder="AB Exempelföretag" value={form.kund_foretag}
               onChange={(e) => update("kund_foretag", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-orgnr" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Organisationsnummer <span className="normal-case font-normal">(valfritt)</span>
             </label>
-            <input type="text" placeholder="556000-0000" value={form.kund_orgnr}
+            <input id="bm-orgnr" type="text" placeholder="556000-0000" value={form.kund_orgnr}
               onChange={(e) => update("kund_orgnr", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-kontaktperson" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Kontaktperson <span className="text-red-400">*</span>
             </label>
-            <input required type="text" placeholder="Anna Svensson" value={form.kund_kontaktperson}
+            <input id="bm-kontaktperson" required type="text" placeholder="Anna Svensson" value={form.kund_kontaktperson}
               onChange={(e) => update("kund_kontaktperson", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-boende" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Boende <span className="normal-case font-normal">(valfritt)</span>
             </label>
-            <input type="text" placeholder="Erik Svensson" value={form.boende_namn}
+            <input id="bm-boende" type="text" placeholder="Erik Svensson" value={form.boende_namn}
               onChange={(e) => update("boende_namn", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               E-post <span className="text-red-400">*</span>
             </label>
-            <input required type="email" placeholder="din@email.se" value={form.email}
+            <input id="bm-email" required type="email" autoComplete="email" placeholder="din@email.se" value={form.email}
               onChange={(e) => update("email", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-telefon" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Telefon <span className="normal-case font-normal">(valfritt)</span>
             </label>
-            <input type="tel" inputMode="tel" placeholder="070-000 00 00" value={form.telefon}
+            <input id="bm-telefon" type="tel" inputMode="tel" placeholder="070-000 00 00" value={form.telefon}
               onChange={(e) => update("telefon", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
             {telefonOgiltigt && (
-              <p className="text-xs text-red-400 mt-1">{TELEFON_FELTEXT}</p>
+              <p className="text-xs text-red-500 mt-1">{TELEFON_FELTEXT}</p>
             )}
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="bm-startdatum" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Önskat inflyttningsdatum <span className="text-red-400">*</span>
             </label>
-            <input required type="date" min={minDatum} value={form.startdatum}
+            <input id="bm-startdatum" required type="date" min={minDatum} value={form.startdatum}
               onChange={(e) => update("startdatum", e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors" />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p className="text-xs text-gray-500 mt-1.5">
               Bokning löper tills vidare från inflyttningsdatum
             </p>
           </div>

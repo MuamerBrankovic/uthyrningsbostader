@@ -418,6 +418,50 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 16
+
+### Grupp 3, DEL 1-3 (DEL 4 = beslutsunderlag, ej byggt)
+
+DEL 1 — DATABASINDEX + STÄDNING (migration 20260730113426):
+- Index tillagda utifrån verkliga frågemönster i app/api/:
+  * Bokning(rum_id, status) — tillgänglighets-/överlappskontroller
+    (bostadslista/-sida, boknings-POST, PATCH-bekräftelse)
+  * Bokning(created_at) — admin "Alla bokningar" sorterar på created_at desc
+  * Rum(bostad_id) — rum laddas per bostad; FK indexeras ej automatiskt i Postgres
+  * Offertforfragan(created_at), Hyresvardsanmalan(created_at) — admin-listornas sortering
+- AVVIKELSE från granskningens förslag: INGET Bokning(email)-index — email
+  frågas inte längre (Mina bokningar bytte till anvandare_id, redan indexerat).
+  Behovet finns alltså inte i koden.
+- Rum.status BORTTAGET: verifierat med grep att inget läser fältet (logik
+  räknar från bokningar). Tre frontend-typer deklarerade det oanvänt — städat.
+  Migrationen skapades manuellt + prisma migrate deploy (migrate dev vägrar
+  radera kolumn med data icke-interaktivt).
+
+DEL 2 — TILLGÄNGLIGHET (WCAG basnivå):
+- Labels kopplade (htmlFor + id) i ALLA formulär: /offert, /hyresvardar,
+  /logga-in, /registrera, bokningsmodalen, MittKonto, LaggUppBostad,
+  LaggUppRum, lead-noteringen (unik id per ärende).
+- Global fokusring i globals.css via :focus-visible (grön, endast tangentbord).
+- Kontrast: gray-400 → gray-500 på labels/hjälptext (2.8:1 → ~4.5:1 AA).
+  Varsamt — dekorativa mikrotexter och placeholders orörda.
+- Modaler (BokningsModal + OffertModal): fokusfälla (Tab cirkulerar),
+  fokus flyttas in vid öppning + åter vid stängning, Escape stänger,
+  role="dialog" + aria-modal + aria-labelledby (bokning) / aria-label (offert).
+- Alt-texter: genomgångna — bostads-/rums-/kontaktbilder använder namn,
+  galleriets miniatyrer alt="" (dekorativa, knapp har aria-label).
+  Admin-uppladdningens förhandsvisning fick alt="Uppladdad bild".
+- autoComplete tillagt på e-post/namn/lösenord för bättre ifyllnad.
+
+DEL 3 — BACKUP.md skapad: Neon-branch + pg_dump-rutin, återställning, samt
+att Vercel Blob-filer (bilder/kontrakt-PDF) INTE ingår och säkras separat.
+Skriven för icke-utvecklare.
+
+VERIFIERAT: tsc + build gröna. test:api 7/7 (bokningsflöde/dubbelbokning
+intakt). Migration applicerad på Neon.
+
+PÅMINNELSE: starta om dev-servern (prisma generate kördes).
+DEL 4 (Sentry) — se rapport, inväntar beslut.
+
 ## Dag 15
 
 ### Lead-uppföljning för offert + hyresvärd (admin-arbetsflöde)

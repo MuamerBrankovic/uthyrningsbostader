@@ -65,11 +65,13 @@ export default function LoggaIn() {
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
 
           <div className="mb-5">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="login-email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               E-postadress
             </label>
             <input
+              id="login-email"
               type="email"
+              autoComplete="email"
               placeholder="din@email.se"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -78,11 +80,13 @@ export default function LoggaIn() {
           </div>
 
           <div className="mb-2">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+            <label htmlFor="login-losenord" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
               Lösenord
             </label>
             <input
+              id="login-losenord"
               type="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               value={losenord}
               onChange={(e) => setLosenord(e.target.value)}

@@ -106,7 +106,7 @@ const INPUT_CLS =
   "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors";
 
 const LABEL_CLS =
-  "text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2";
+  "text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2";
 
 function parseList(s: string): string[] {
   return s
@@ -226,7 +226,7 @@ function BildUppladdning({
             >
               {item.url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                <img src={item.url} alt="Uppladdad bild" className="w-full h-full object-cover" />
               ) : item.uploading ? (
                 <div className="w-5 h-5 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin" />
               ) : (
@@ -403,10 +403,11 @@ function LaggUppBostad() {
 
       <div className="grid md:grid-cols-2 gap-5 mb-5">
         <div>
-          <label className={LABEL_CLS}>
+          <label htmlFor="bostad-namn" className={LABEL_CLS}>
             Bostadens namn <span className="text-red-400">*</span>
           </label>
           <input
+            id="bostad-namn"
             type="text"
             placeholder="t.ex. Hagagatan 12"
             value={namn}
@@ -415,8 +416,9 @@ function LaggUppBostad() {
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>Stadsdel</label>
+          <label htmlFor="bostad-stadsdel" className={LABEL_CLS}>Stadsdel</label>
           <input
+            id="bostad-stadsdel"
             type="text"
             placeholder="t.ex. Södermalm"
             value={stadsdel}
@@ -425,8 +427,9 @@ function LaggUppBostad() {
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>Adress</label>
+          <label htmlFor="bostad-adress" className={LABEL_CLS}>Adress</label>
           <input
+            id="bostad-adress"
             type="text"
             placeholder="t.ex. Hagagatan 12, 113 47 Stockholm"
             value={adress}
@@ -435,8 +438,9 @@ function LaggUppBostad() {
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>Bostadstyp</label>
+          <label htmlFor="bostad-typ" className={LABEL_CLS}>Bostadstyp</label>
           <select
+            id="bostad-typ"
             value={bostadstyp}
             onChange={(e) => setBostadstyp(e.target.value)}
             className={INPUT_CLS}
@@ -449,8 +453,9 @@ function LaggUppBostad() {
       </div>
 
       <div className="mb-5">
-        <label className={LABEL_CLS}>Beskrivning</label>
+        <label htmlFor="bostad-beskrivning" className={LABEL_CLS}>Beskrivning</label>
         <textarea
+          id="bostad-beskrivning"
           placeholder="Beskriv bostaden och dess omgivning..."
           value={beskrivning}
           onChange={(e) => setBeskrivning(e.target.value)}
@@ -460,11 +465,12 @@ function LaggUppBostad() {
       </div>
 
       <div className="mb-5">
-        <label className={LABEL_CLS}>
+        <label htmlFor="bostad-delade" className={LABEL_CLS}>
           Delade utrymmen{" "}
           <span className="normal-case font-normal">(separera med komma)</span>
         </label>
         <input
+          id="bostad-delade"
           type="text"
           placeholder="t.ex. Gemensamt kök, Vardagsrum, Badrum"
           value={deladeUtrymmen}
@@ -474,11 +480,12 @@ function LaggUppBostad() {
       </div>
 
       <div className="mb-5">
-        <label className={LABEL_CLS}>
+        <label htmlFor="bostad-inkluderat" className={LABEL_CLS}>
           Vad ingår{" "}
           <span className="normal-case font-normal">(separera med komma)</span>
         </label>
         <input
+          id="bostad-inkluderat"
           type="text"
           placeholder="t.ex. El, Vatten, Bredband, TV-avgift"
           value={inkluderat}
@@ -500,18 +507,18 @@ function LaggUppBostad() {
         <p className="text-xs text-gray-400 mb-5">Visas för hyresgäster på rumssidan (valfritt)</p>
         <div className="grid md:grid-cols-2 gap-5 mb-5">
           <div>
-            <label className={LABEL_CLS}>Namn</label>
-            <input type="text" placeholder="Anna Svensson" value={kontaktNamn}
+            <label htmlFor="kontakt-namn" className={LABEL_CLS}>Namn</label>
+            <input id="kontakt-namn" type="text" placeholder="Anna Svensson" value={kontaktNamn}
               onChange={(e) => setKontaktNamn(e.target.value)} className={INPUT_CLS} />
           </div>
           <div>
-            <label className={LABEL_CLS}>Telefon</label>
-            <input type="tel" placeholder="070-000 00 00" value={kontaktTelefon}
+            <label htmlFor="kontakt-telefon" className={LABEL_CLS}>Telefon</label>
+            <input id="kontakt-telefon" type="tel" placeholder="070-000 00 00" value={kontaktTelefon}
               onChange={(e) => setKontaktTelefon(e.target.value)} className={INPUT_CLS} />
           </div>
           <div className="md:col-span-2">
-            <label className={LABEL_CLS}>E-post</label>
-            <input type="email" placeholder="anna@exempel.se" value={kontaktEmail}
+            <label htmlFor="kontakt-email" className={LABEL_CLS}>E-post</label>
+            <input id="kontakt-email" type="email" placeholder="anna@exempel.se" value={kontaktEmail}
               onChange={(e) => setKontaktEmail(e.target.value)} className={INPUT_CLS} />
           </div>
         </div>
@@ -621,11 +628,11 @@ function LaggUppRum() {
 
       {/* VÄLJ BOSTAD */}
       <div className="mb-6">
-        <label className={LABEL_CLS}>
+        <label htmlFor="rum-bostad" className={LABEL_CLS}>
           Bostad <span className="text-red-400">*</span>
         </label>
         {hamtarBostader ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400 py-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500 py-3">
             <div className="w-4 h-4 border-2 border-[#2D7A4F] border-t-transparent rounded-full animate-spin" />
             Hämtar bostäder...
           </div>
@@ -636,6 +643,7 @@ function LaggUppRum() {
           </div>
         ) : (
           <select
+            id="rum-bostad"
             value={bostadId}
             onChange={(e) => setBostadId(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
@@ -655,10 +663,11 @@ function LaggUppRum() {
       {/* RUMSUPPGIFTER */}
       <div className="grid md:grid-cols-2 gap-5 mb-5">
         <div className="md:col-span-2">
-          <label className={LABEL_CLS}>
+          <label htmlFor="rum-namn" className={LABEL_CLS}>
             Rumsnamn <span className="text-red-400">*</span>
           </label>
           <input
+            id="rum-namn"
             type="text"
             placeholder="t.ex. Rum 1, Enkelrum norra, Mästarsvitten"
             value={namn}
@@ -667,8 +676,9 @@ function LaggUppRum() {
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>Storlek (kvm)</label>
+          <label htmlFor="rum-kvm" className={LABEL_CLS}>Storlek (kvm)</label>
           <input
+            id="rum-kvm"
             type="number"
             min="1"
             placeholder="t.ex. 12"
@@ -678,10 +688,11 @@ function LaggUppRum() {
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>
+          <label htmlFor="rum-hyra" className={LABEL_CLS}>
             Månadshyra (kr) <span className="text-red-400">*</span>
           </label>
           <input
+            id="rum-hyra"
             type="number"
             min="0"
             placeholder="t.ex. 8500"
@@ -693,8 +704,9 @@ function LaggUppRum() {
       </div>
 
       <div className="mb-5">
-        <label className={LABEL_CLS}>Beskrivning</label>
+        <label htmlFor="rum-beskrivning" className={LABEL_CLS}>Beskrivning</label>
         <textarea
+          id="rum-beskrivning"
           placeholder="Beskriv rummet, läge i bostaden, ljusinsläpp..."
           value={beskrivning}
           onChange={(e) => setBeskrivning(e.target.value)}
@@ -704,11 +716,12 @@ function LaggUppRum() {
       </div>
 
       <div className="mb-5">
-        <label className={LABEL_CLS}>
+        <label htmlFor="rum-moblering" className={LABEL_CLS}>
           Möblering{" "}
           <span className="normal-case font-normal">(separera med komma)</span>
         </label>
         <input
+          id="rum-moblering"
           type="text"
           placeholder="t.ex. Säng 90cm, Skrivbord, Garderob, Stol"
           value={moblering}
@@ -934,11 +947,12 @@ function LeadKort({
       {meddelande && <LeadMeddelande text={meddelande} />}
 
       <div className="mt-4 pt-4 border-t border-gray-100">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+        <label htmlFor={`notering-${item.id}`} className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
           Intern anteckning{" "}
-          <span className="normal-case font-normal text-gray-300">(syns bara för admin)</span>
+          <span className="normal-case font-normal text-gray-400">(syns bara för admin)</span>
         </label>
         <textarea
+          id={`notering-${item.id}`}
           value={notering}
           onChange={(e) => {
             setNotering(e.target.value);
@@ -1573,8 +1587,9 @@ function MittKonto({ session }: { session: NonNullable<Session> }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className={LABEL_CLS}>Nuvarande lösenord</label>
+            <label htmlFor="konto-nuvarande" className={LABEL_CLS}>Nuvarande lösenord</label>
             <input
+              id="konto-nuvarande"
               type="password"
               autoComplete="current-password"
               value={nuvarande}
@@ -1585,8 +1600,9 @@ function MittKonto({ session }: { session: NonNullable<Session> }) {
             />
           </div>
           <div>
-            <label className={LABEL_CLS}>Nytt lösenord</label>
+            <label htmlFor="konto-nytt" className={LABEL_CLS}>Nytt lösenord</label>
             <input
+              id="konto-nytt"
               type="password"
               autoComplete="new-password"
               value={nyttLosenord}
@@ -1601,8 +1617,9 @@ function MittKonto({ session }: { session: NonNullable<Session> }) {
             )}
           </div>
           <div>
-            <label className={LABEL_CLS}>Bekräfta nytt lösenord</label>
+            <label htmlFor="konto-bekrafta" className={LABEL_CLS}>Bekräfta nytt lösenord</label>
             <input
+              id="konto-bekrafta"
               type="password"
               autoComplete="new-password"
               value={bekrafta}

@@ -145,11 +145,13 @@ export default function Hyresvardar() {
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-8 space-y-5">
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="hv-namn" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                   Namn <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="hv-namn"
                   type="text"
+                  autoComplete="name"
                   required
                   value={form.namn}
                   onChange={(e) => update("namn", e.target.value)}
@@ -158,10 +160,11 @@ export default function Hyresvardar() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="hv-telefon" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                   Telefon
                 </label>
                 <input
+                  id="hv-telefon"
                   type="tel"
                   inputMode="tel"
                   value={form.telefon}
@@ -176,11 +179,13 @@ export default function Hyresvardar() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+              <label htmlFor="hv-email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                 E-post <span className="text-red-400">*</span>
               </label>
               <input
+                id="hv-email"
                 type="email"
+                autoComplete="email"
                 required
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
@@ -191,10 +196,11 @@ export default function Hyresvardar() {
 
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="hv-stad" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                   Stad
                 </label>
                 <select
+                  id="hv-stad"
                   value={form.stad}
                   onChange={(e) => update("stad", e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
@@ -205,10 +211,11 @@ export default function Hyresvardar() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="hv-adress" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                   Adress
                 </label>
                 <input
+                  id="hv-adress"
                   type="text"
                   value={form.adress}
                   onChange={(e) => update("adress", e.target.value)}
@@ -219,10 +226,11 @@ export default function Hyresvardar() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+              <label htmlFor="hv-meddelande" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
                 Meddelande
               </label>
               <textarea
+                id="hv-meddelande"
                 value={form.meddelande}
                 onChange={(e) => update("meddelande", e.target.value)}
                 rows={4}

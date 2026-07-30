@@ -31,7 +31,6 @@ type Rum = {
   bilder: string[];
   kvm: number | null;
   manadshyra: number;
-  status: string;
   bokningar: Bokning[];
 };
 

@@ -17,13 +17,11 @@ const BOSTADSTYPER: { label: string; value: string }[] = [
 type Rum = {
   id: string;
   manadshyra: number;
-  status: string;
   bilder: string[];
   bokningar: { slutdatum: string | null }[];
 };
 
 // Ledigt = ingen aktiv bekräftad bokning (API:t returnerar bara bekräftade).
-// Rum.status-fältet i databasen uppdateras aldrig och får inte användas här.
 function arLedigt(rum: Rum): boolean {
   return !rum.bokningar.some(
     (b) => !b.slutdatum || new Date(b.slutdatum) > new Date()

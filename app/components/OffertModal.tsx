@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { TELEFON_VISNING, TELEFON_LANK } from "@/lib/kontakt";
 
@@ -9,13 +9,46 @@ type Props = {
 };
 
 export default function OffertModal({ open, onClose }: Props) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Tillgänglighet: Escape stänger, fokus flyttas in i modalen och fångas
+  // (fokusfälla), och återlämnas till utlösaren när den stängs.
   useEffect(() => {
     if (!open) return;
+    const forraFokus = document.activeElement as HTMLElement | null;
+    const el = modalRef.current;
+    const fokuserbara = () =>
+      Array.from(
+        el?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((x) => x.offsetParent !== null);
+
+    fokuserbara()[0]?.focus();
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const f = fokuserbara();
+      if (f.length === 0) return;
+      const forsta = f[0];
+      const sista = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === forsta) {
+        e.preventDefault();
+        sista.focus();
+      } else if (!e.shiftKey && document.activeElement === sista) {
+        e.preventDefault();
+        forsta.focus();
+      }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      forraFokus?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -31,7 +64,7 @@ export default function OffertModal({ open, onClose }: Props) {
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-8 z-10">
+      <div ref={modalRef} className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-8 z-10">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors p-1"

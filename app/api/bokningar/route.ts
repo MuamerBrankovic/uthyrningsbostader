@@ -201,7 +201,6 @@ export async function POST(request: Request) {
 }
 
 type RumWithBokningar = {
-  status: string;
   bokningar: { slutdatum: Date | null; startdatum: Date }[];
 };
 

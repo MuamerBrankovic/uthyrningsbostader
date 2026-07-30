@@ -38,6 +38,9 @@ model Hyresvardsanmalan {
   intern_notering String?   @db.Text
   uppdaterad      DateTime?
   created_at  DateTime @default(now())
+
+  // Admin-lista hämtas sorterad på created_at desc
+  @@index([created_at])
 }
 
 model Rum {
@@ -50,9 +53,12 @@ model Rum {
   kvm         Int?
   manadshyra  Int
   moblering   String[]
-  status      String     @default("ledig")
   bokningar   Bokning[]
   created_at  DateTime   @default(now())
+
+  // Rum laddas alltid per bostad (bostadslista + bostadssida include rum).
+  // FK-kolumner indexeras inte automatiskt i Postgres.
+  @@index([bostad_id])
 }
 
 model Bokning {
@@ -82,6 +88,11 @@ model Bokning {
   created_at         DateTime @default(now())
 
   @@index([anvandare_id])
+  // Tillgänglighets- och överlappskontroller filtrerar bokningar per rum på
+  // bekräftad status (bostadslista/-sida, boknings-POST, PATCH-bekräftelse).
+  @@index([rum_id, status])
+  // Admin "Alla bokningar" sorterar på created_at desc; störst tabellen över tid.
+  @@index([created_at])
 }
 
 model Anvandare {
@@ -112,4 +123,7 @@ model Offertforfragan {
   intern_notering String?   @db.Text
   uppdaterad      DateTime?
   created_at      DateTime  @default(now())
+
+  // Admin-lista hämtas sorterad på created_at desc
+  @@index([created_at])
 }

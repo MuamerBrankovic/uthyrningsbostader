@@ -8,7 +8,7 @@ import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
 const INPUT_CLS =
   "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white";
 const LABEL_CLS =
-  "text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2";
+  "text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2";
 
 type Status = "idle" | "sending" | "done" | "error";
 
@@ -142,10 +142,11 @@ export default function OffertSida() {
 
             <div className="grid md:grid-cols-2 gap-5 mb-5">
               <div className="md:col-span-2">
-                <label className={LABEL_CLS}>
+                <label htmlFor="offert-foretag" className={LABEL_CLS}>
                   Företagsnamn <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="offert-foretag"
                   type="text"
                   required
                   value={form.foretag}
@@ -156,8 +157,9 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>Organisationsnummer</label>
+                <label htmlFor="offert-orgnr" className={LABEL_CLS}>Organisationsnummer</label>
                 <input
+                  id="offert-orgnr"
                   type="text"
                   value={form.orgnr}
                   onChange={(e) => update("orgnr", e.target.value)}
@@ -167,10 +169,11 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>
+                <label htmlFor="offert-kontaktperson" className={LABEL_CLS}>
                   Kontaktperson <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="offert-kontaktperson"
                   type="text"
                   required
                   value={form.kontaktperson}
@@ -181,11 +184,13 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>
+                <label htmlFor="offert-email" className={LABEL_CLS}>
                   E-post <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="offert-email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={form.email}
                   onChange={(e) => update("email", e.target.value)}
@@ -195,10 +200,11 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>
+                <label htmlFor="offert-telefon" className={LABEL_CLS}>
                   Telefon <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="offert-telefon"
                   type="tel"
                   inputMode="tel"
                   required
@@ -223,8 +229,9 @@ export default function OffertSida() {
 
             <div className="grid md:grid-cols-2 gap-5 mb-5">
               <div>
-                <label className={LABEL_CLS}>Stad</label>
+                <label htmlFor="offert-stad" className={LABEL_CLS}>Stad</label>
                 <select
+                  id="offert-stad"
                   value={form.stad}
                   onChange={(e) => update("stad", e.target.value)}
                   className={INPUT_CLS}
@@ -236,8 +243,9 @@ export default function OffertSida() {
                 </select>
               </div>
               <div>
-                <label className={LABEL_CLS}>Antal personer</label>
+                <label htmlFor="offert-antal" className={LABEL_CLS}>Antal personer</label>
                 <input
+                  id="offert-antal"
                   type="number"
                   min="1"
                   value={form.antal_personer}
@@ -248,8 +256,9 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>Önskat inflyttningsdatum</label>
+                <label htmlFor="offert-inflyttning" className={LABEL_CLS}>Önskat inflyttningsdatum</label>
                 <input
+                  id="offert-inflyttning"
                   type="date"
                   value={form.inflyttning}
                   onChange={(e) => update("inflyttning", e.target.value)}
@@ -258,8 +267,9 @@ export default function OffertSida() {
                 />
               </div>
               <div>
-                <label className={LABEL_CLS}>Bostadstyp</label>
+                <label htmlFor="offert-bostadstyp" className={LABEL_CLS}>Bostadstyp</label>
                 <select
+                  id="offert-bostadstyp"
                   value={form.bostadstyp}
                   onChange={(e) => update("bostadstyp", e.target.value)}
                   className={INPUT_CLS}
@@ -273,8 +283,9 @@ export default function OffertSida() {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className={LABEL_CLS}>Meddelande</label>
+                <label htmlFor="offert-meddelande" className={LABEL_CLS}>Meddelande</label>
                 <textarea
+                  id="offert-meddelande"
                   value={form.meddelande}
                   onChange={(e) => update("meddelande", e.target.value)}
                   rows={4}
