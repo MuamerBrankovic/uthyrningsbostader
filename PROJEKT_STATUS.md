@@ -418,6 +418,99 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 19
+
+### Statusvärden samlade på ett ställe — lib/bokningsstatus.ts
+Utlöstes av att fliken "Förfrågningar" visade (0). Felsökningen visade att
+flikfiltret var RÄTT: två bokningar från 2026-05-20 har status "aktiv" i
+databasen, ett värde som inte finns någonstans i koden och som inte tillåts
+av zod-schemat. Det som dolde detta var badge-funktionen, som föll tillbaka
+på "Förfrågan" för okända värden — bokningarna SÅG ut som förfrågningar
+fast de inte var det.
+
+STATUS I DATABASEN (2026-08-04): avbokad 6, bekraftad 3, aktiv 2. Noll
+faktiska förfrågningar — därför är (0) korrekt.
+
+NY FIL lib/bokningsstatus.ts: BOKNING_STATUS, KONTRAKT_STATUS,
+FAKTURA_STATUS + arBokningStatus(). Inkopplad i 12 filer — validering,
+alla API-rutter (inkl. dubbelbokningsskyddets frågor), e-postmodulen,
+dashboarden, bostads- och rumssidorna. Noll lösa statussträngar kvar i
+app/ och lib/. Värdena är oförändrade, bara källan är gemensam.
+
+OKÄNDA VÄRDEN DÖLJS INTE LÄNGRE: badgen visar "Okänd status: aktiv" i
+gult, och bokningen hamnar i "Kräver åtgärd" med "Behöver: okänd status
+(aktiv)" — i stället för att försvinna ur alla arbetsflikar.
+
+VERIFIERAT mot riktig data: 13/13 kontroller, flikantalen jämförda mot
+oberoende uträkning ur databasen, ingen bokning saknar hem, "Kräver åtgärd"
+dubbelräknar inte. tsc + build gröna, test:api 7/7.
+
+DATANORMALISERING (godkänd av Muamer 2026-08-04): de två "aktiv"-raderna
+(Test Person / Test Person 2, test@test.se) sattes till "avbokad" med en
+UPDATE scopad till status='aktiv'. Historiken finns alltså kvar, men de
+blockerar inga rum och kräver ingen åtgärd. "bekraftad" var inget alternativ
+— båda hade krockat med befintliga bekräftade bokningar på samma rum.
+Statusfördelning efter: avbokad 8, bekraftad 3. Noll okända värden kvar.
+Flikarna efter: Kräver åtgärd (2), Förfrågningar (0), Bekräftade (3),
+Avbokade (8), Alla (11) — 11/11 kontroller gröna.
+
+## Dag 18
+
+### "Alla bokningar" omstrukturerad (admin) — VYN, inte logiken
+Bokningslogik, dubbelbokningsskydd, mejlutskick och PATCH-anropen är
+oförändrade. Det som byggts om är hur bokningarna presenteras.
+
+NYA FILER:
+- app/dashboard/AllaBokningar.tsx (692 rader) — hela vyn flyttad hit
+- app/dashboard/typer.ts — RumInfo + AdminBokning, delas av page.tsx och vyn
+- app/dashboard/page.tsx krympte 1771 -> 1267 rader
+
+UNDERFLIKAR (konfigureras i UNDERFLIKAR-arrayen överst i AllaBokningar.tsx):
+- Kräver åtgärd (default) / Förfrågningar / Bekräftade / Avbokade / Alla
+- Antal räknas ut automatiskt per flik, på HELA listan (siffrorna står stilla
+  medan man söker). "Kräver åtgärd" får grön siffra när den är > 0.
+- Samma streck-stil som huvudflikarna. OBS: stilen är duplicerad, inte delad —
+  ändrar du flikstilen i page.tsx måste du ändra den i AllaBokningar.tsx också.
+
+"KRÄVER ÅTGÄRD" räknas av EN funktion, saknasFor(), som både fliken och
+raden "Behöver: ..." på korten använder — de kan alltså aldrig säga emot
+varandra. Regler: förfrågan -> "svar på förfrågan"; bekräftad + kontrakt
+saknas -> "kontrakt"; bekräftad + ej fakturerad -> "fakturering"; avbokade
+kräver ingenting.
+
+KOMPAKTA KORT:
+- Sammanfattning alltid synlig: företag (annars kontaktperson), rum + bostad,
+  start–slut ("tills vidare" om slutdatum saknas), statusbadge, samt två små
+  indikatorer "Kontrakt: ..." / "Faktura: ...".
+- Detaljer bakom "Visa detaljer": kontaktuppgifter som klickbara länkar,
+  org.nr, boende, avtalstyp, hyra, inkom-datum, bekräfta/avboka/slutdatum
+  och hela kontrakts- + fakturasektionen.
+- FLERA kort får vara öppna samtidigt (man jobbar igenom en hög åt gången).
+- Hela sammanfattningsraden är en <button> med aria-expanded + aria-controls,
+  fungerar med tangentbord utan extra kod.
+
+SÖK + SORTERING (klientsidan, på redan hämtad data — inga extra API-anrop):
+- Söker i företag, kontaktperson, e-post, boende, rummets och bostadens namn.
+- Skiftlägesokänslig, filtrerar inom vald flik.
+- Tom träfflista ger "Inga träffar för ..." + knappen "Rensa sökning".
+- Sortering: Nyast först (standard) / Äldst först / Startdatum.
+
+VERIFIERAT (Playwright mot dev-server, engångs-admin, självstädande):
+42/42 kontroller gröna — flikantal jämförda mot oberoende uträkning ur
+databasen, sökning, sortering, expandering (mus + Enter), mobil, samt
+regressioner: bekräfta, avboka, slutdatum, fakturastatus, kontraktstatus
+och dubbelbokningsskyddet via UI ("Rummet har redan en bekräftad bokning
+som överlappar den här perioden"). tsc + build gröna, test:api 7/7.
+All testdata raderad efteråt — de 11 riktiga bokningarna orörda.
+
+FALLGROP FÖR FRAMTIDA TESTER: fliketiketterna "Bekräftade"/"Avbokade"
+innehåller texterna "Bekräfta"/"Avboka". En selektor som
+button:has-text("Bekräfta") träffar alltså FLIKEN, inte åtgärdsknappen —
+scopa alltid till kortets detaljblock (#bokning-detaljer-<id>).
+
+KVARSTÅR (befintligt, ej infört av denna ändring): eslint klagar på
+oescapade citattecken i "Lägg upp bostad"-fliken (page.tsx rad 362).
+
 ## Dag 17
 
 ### En stad: Norrköping borttaget ur hela UI:t

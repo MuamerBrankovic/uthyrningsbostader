@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { lasJson, validera, bostadSchema } from "@/lib/validering";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
             // Publikt endpoint: bara bekräftade bokningar påverkar tillgänglighet,
             // och kunduppgifter (namn/email/telefon) får aldrig läcka ut här
             bokningar: {
-              where: { status: "bekraftad" },
+              where: { status: BOKNING_STATUS.BEKRAFTAD },
               select: { id: true, startdatum: true, slutdatum: true, status: true },
               orderBy: { startdatum: "desc" },
             },

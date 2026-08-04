@@ -6,6 +6,7 @@ import Bildgalleri from "@/app/components/Bildgalleri";
 import { formateraDatum, formateraKortDatum } from "@/lib/datum";
 import { ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
 import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 type Bokning = {
   id: string;
@@ -37,7 +38,7 @@ type Rum = {
 
 function getForstaLedigaDatum(bokningar: Bokning[]): string {
   const active = bokningar.filter((b) => {
-    if (b.status === "avbokad") return false;
+    if (b.status === BOKNING_STATUS.AVBOKAD) return false;
     if (!b.slutdatum) return true;
     return new Date(b.slutdatum) > new Date();
   });
@@ -62,7 +63,7 @@ function getForstaLedigaDatum(bokningar: Bokning[]): string {
 
 function getRumStatusLabel(bokningar: Bokning[]): { label: string; color: string } {
   const active = bokningar.filter((b) => {
-    if (b.status === "avbokad") return false;
+    if (b.status === BOKNING_STATUS.AVBOKAD) return false;
     if (!b.slutdatum) return true;
     return new Date(b.slutdatum) > new Date();
   });

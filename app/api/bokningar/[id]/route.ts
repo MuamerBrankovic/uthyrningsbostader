@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { ApiFel } from "@/lib/apifel";
 import { lasJson, validera, bokningPatchSchema } from "@/lib/validering";
 import { skickaBokningsstatusMail } from "@/lib/email";
+import { BOKNING_STATUS, type BokningStatus } from "@/lib/bokningsstatus";
 
 export async function PATCH(
   request: Request,
@@ -24,7 +25,7 @@ export async function PATCH(
     if (!valid.ok) return valid.svar;
 
     const data: {
-      status?: "forfragan" | "bekraftad" | "avbokad";
+      status?: BokningStatus;
       slutdatum?: Date | null;
       kontrakt_status?: string;
       kontrakt_uppdaterad?: Date;
@@ -76,12 +77,12 @@ export async function PATCH(
           // Dubbelbokningsskydd: rummet får inte ha någon annan bekräftad
           // bokning som överlappar perioden. slutdatum null = tills vidare,
           // dvs. överlappar allt från sitt startdatum och framåt.
-          if (nyStatus === "bekraftad") {
+          if (nyStatus === BOKNING_STATUS.BEKRAFTAD) {
             const krock = await tx.bokning.findFirst({
               where: {
                 rum_id: befintlig.rum_id,
                 id: { not: befintlig.id },
-                status: "bekraftad",
+                status: BOKNING_STATUS.BEKRAFTAD,
                 // Befintlig bokning börjar innan/på vår slutpunkt ...
                 ...(nyttSlutdatum ? { startdatum: { lte: nyttSlutdatum } } : {}),
                 // ... och slutar efter/på vår startpunkt
@@ -143,7 +144,7 @@ export async function PATCH(
     // men vi VÄNTAR in utskicket innan svaret går.
     const nyStatus = data.status;
     if (
-      (nyStatus === "bekraftad" || nyStatus === "avbokad") &&
+      (nyStatus === BOKNING_STATUS.BEKRAFTAD || nyStatus === BOKNING_STATUS.AVBOKAD) &&
       nyStatus !== tidigareStatus
     ) {
       console.log(

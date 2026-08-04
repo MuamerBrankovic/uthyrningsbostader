@@ -5,6 +5,7 @@ import { skickaBokningsmail } from "@/lib/email";
 import { rateLimit } from "@/lib/ratelimit";
 import { ApiFel } from "@/lib/apifel";
 import { lasJson, validera, bokningSchema } from "@/lib/validering";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 export async function GET(request: Request) {
   try {
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
               bostad: { select: { namn: true, stadsdel: true, adress: true } },
               // Endast bekräftade bokningar blockerar — en obekräftad förfrågan
               // får inte låsa rummet för andra
-              bokningar: { where: { status: "bekraftad" } },
+              bokningar: { where: { status: BOKNING_STATUS.BEKRAFTAD } },
             },
           });
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { TELEFON_REGEX, TELEFON_FELTEXT } from "@/lib/telefon";
+import {
+  BOKNING_STATUSAR,
+  KONTRAKT_STATUSAR,
+  FAKTURA_STATUSAR,
+} from "@/lib/bokningsstatus";
 
 // ─── Zod-scheman för alla skrivande endpoints ────────────────────────────────
 // Felmeddelandena visas direkt för användaren i formulären — håll dem svenska
@@ -151,15 +156,15 @@ export const rumSchema = z.object({
 
 export const bokningPatchSchema = z
   .object({
-    status: z.enum(["forfragan", "bekraftad", "avbokad"], {
-      error: "status måste vara en av: forfragan, bekraftad, avbokad",
+    status: z.enum(BOKNING_STATUSAR, {
+      error: `status måste vara en av: ${BOKNING_STATUSAR.join(", ")}`,
     }).optional(),
     slutdatum: z.string().trim().max(30).nullable().optional(),
-    kontrakt_status: z.enum(["saknas", "uppladdat", "skickat", "signerat"], {
-      error: "kontrakt_status måste vara en av: saknas, uppladdat, skickat, signerat",
+    kontrakt_status: z.enum(KONTRAKT_STATUSAR, {
+      error: `kontrakt_status måste vara en av: ${KONTRAKT_STATUSAR.join(", ")}`,
     }).optional(),
-    faktura_status: z.enum(["ej_fakturerad", "fakturerad", "betald"], {
-      error: "faktura_status måste vara en av: ej_fakturerad, fakturerad, betald",
+    faktura_status: z.enum(FAKTURA_STATUSAR, {
+      error: `faktura_status måste vara en av: ${FAKTURA_STATUSAR.join(", ")}`,
     }).optional(),
   })
   .refine(

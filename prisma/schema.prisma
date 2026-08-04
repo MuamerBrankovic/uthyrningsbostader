@@ -77,6 +77,9 @@ model Bokning {
   telefon            String?
   startdatum         DateTime
   slutdatum          DateTime?
+  // Giltiga värden definieras i lib/bokningsstatus.ts (BOKNING_STATUS).
+  // Prisma kan inte läsa TypeScript — ändras de måste defaulten här ändras
+  // med en migration samtidigt.
   status             String   @default("forfragan")
   avtalstyp          String   @default("standard")
   // Kontrakthantering (admin) — saknas | uppladdat | skickat | signerat

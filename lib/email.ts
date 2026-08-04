@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { formateraDatum } from "@/lib/datum";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 const GRON = "#2D7A4F";
 const MORK = "#1a1a1a";
@@ -296,7 +297,7 @@ export async function skickaBokningsstatusMail(
   bokning: StatusBokningData,
   rum: RumData,
   bostad: BostadData,
-  nyStatus: "bekraftad" | "avbokad"
+  nyStatus: typeof BOKNING_STATUS.BEKRAFTAD | typeof BOKNING_STATUS.AVBOKAD
 ): Promise<{ ok: boolean; error?: string }> {
   const resend = getResend();
   if (!resend) {
@@ -322,7 +323,7 @@ export async function skickaBokningsstatusMail(
   let html: string;
   let text: string;
 
-  if (nyStatus === "bekraftad") {
+  if (nyStatus === BOKNING_STATUS.BEKRAFTAD) {
     amne = "Din bokningsförfrågan är bekräftad — ReLoka";
     html = wrapper(`
       <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;">

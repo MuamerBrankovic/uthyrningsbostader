@@ -15,6 +15,7 @@ import {
   Tag,
   ArrowLeft,
 } from "lucide-react";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 // ─── Typer ───────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ type RumStatus =
 
 function getRumStatus(rum: Rum): RumStatus {
   const active = rum.bokningar.filter((b) => {
-    if (b.status === "avbokad") return false;
+    if (b.status === BOKNING_STATUS.AVBOKAD) return false;
     if (!b.slutdatum) return true;
     return new Date(b.slutdatum) > new Date();
   });

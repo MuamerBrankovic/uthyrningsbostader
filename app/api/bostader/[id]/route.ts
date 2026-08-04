@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 export async function GET(
   _request: Request,
@@ -14,7 +15,7 @@ export async function GET(
           include: {
             // Publikt endpoint: bara bekräftade bokningar, inga kunduppgifter
             bokningar: {
-              where: { status: "bekraftad" },
+              where: { status: BOKNING_STATUS.BEKRAFTAD },
               select: { id: true, startdatum: true, slutdatum: true, status: true },
               orderBy: { startdatum: "asc" },
             },

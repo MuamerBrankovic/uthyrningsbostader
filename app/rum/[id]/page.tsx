@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import RumSida from "./RumSida";
+import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -11,7 +12,7 @@ const getRum = cache(async (id: string) => {
     include: {
       bostad: { select: { id: true, namn: true, adress: true, stadsdel: true } },
       bokningar: {
-        where: { status: "bekraftad" },
+        where: { status: BOKNING_STATUS.BEKRAFTAD },
         select: { id: true, startdatum: true, slutdatum: true, status: true },
       },
     },
