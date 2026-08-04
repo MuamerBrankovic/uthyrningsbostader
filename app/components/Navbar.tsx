@@ -1,10 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import OffertModal from "@/app/components/OffertModal";
 import { useSession } from "@/app/components/SessionProvider";
-import { useAktivSektion } from "@/app/components/useAktivSektion";
 
 // ─── Menyn ───────────────────────────────────────────────────────────────────
 //
@@ -20,8 +19,11 @@ import { useAktivSektion } from "@/app/components/useAktivSektion";
 //   2. SEKTIONSLÄNK — hoppar till en del av startsidan. Använd "sektion":
 //        { href: "/#kontakt", label: "Kontakt", sektion: "kontakt" }
 //      Texten i "sektion" måste vara exakt samma som id:t på taggen i
-//      app/page.tsx, alltså <section id="kontakt">. Markeringen tänds och
-//      släcks sedan automatiskt när man scrollar — inget mer behöver göras.
+//      app/page.tsx, alltså <section id="kontakt">.
+//      Markeringen tänds när man KLICKAR på länken och lyser kvar så länge
+//      man är kvar på startsidan, hur man än scrollar. Den släcks när man går
+//      till en annan sida, eller går till startsidan utan att ha klickat
+//      (t.ex. via logotypen). Inget mer behöver göras.
 
 type MenyPost = {
   href: string;
@@ -38,10 +40,33 @@ const MENY: MenyPost[] = [
   { href: "/faq", label: "FAQ", matcha: ["/faq"] },
 ];
 
-// Sektions-id:n plockas ut ur menyn ovan — läggs en ny sektionslänk till
-// börjar den bevakas automatiskt. Konstant på modulnivå så att listan har
-// samma identitet vid varje rendering.
-const SEKTIONER: string[] = MENY.flatMap((m) => (m.sektion ? [m.sektion] : []));
+// ─── Hash i adressfältet ─────────────────────────────────────────────────────
+//
+// Sektionsmarkeringen styrs av adressfältet: klickar man "/#for-foretag" står
+// "#for-foretag" kvar i adressen tills man navigerar bort. Det är alltså
+// adressen — inte scrollpositionen — som avgör om strecket lyser.
+//
+// Hash finns inte vid serverrendering, därför tom sträng där. useSyncExternalStore
+// är Reacts sätt att läsa något som lever utanför React (här adressfältet):
+// vi läser om det vid varje rendering och när något av händelserna nedan smäller.
+
+function prenumereraPaHash(vidAndring: () => void): () => void {
+  // hashchange = användaren byter bara #del. popstate = bakåt/framåt-knappen.
+  window.addEventListener("hashchange", vidAndring);
+  window.addEventListener("popstate", vidAndring);
+  return () => {
+    window.removeEventListener("hashchange", vidAndring);
+    window.removeEventListener("popstate", vidAndring);
+  };
+}
+
+function useHash(): string {
+  return useSyncExternalStore(
+    prenumereraPaHash,
+    () => window.location.hash, // i webbläsaren
+    () => "" // vid serverrendering
+  );
+}
 
 // ─── Aktiv-markering ─────────────────────────────────────────────────────────
 
@@ -111,9 +136,29 @@ export default function Navbar() {
   const [offertOpen, setOffertOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const hash = useHash();
 
-  // Sektionerna finns bara på startsidan — därför bevakas de bara där.
-  const aktivSektion = useAktivSektion(SEKTIONER, pathname === "/");
+  // Sektionslänkar hör till startsidan. Är vi någon annanstans lyser ingen av
+  // dem, även om adressen skulle råka ha en hash kvar.
+  const aktivSektion = pathname === "/" ? hash.replace(/^#/, "") || null : null;
+
+  // Logotypen ska leda till toppen av startsidan UTAN markering. Står vi redan
+  // på /#for-foretag behövs ingen sidladdning — vi städar bara bort #delen ur
+  // adressen och rullar upp. (Låter man Next hantera klicket lägger den tillbaka
+  // hashen, eftersom den räknar adressen med #del som "nuvarande sida".)
+  // I alla andra lägen gör vi ingenting och låter Next navigera som vanligt.
+  function handleLogotypKlick(e: React.MouseEvent) {
+    // Ctrl/cmd-klick m.m. ska fortsatt kunna öppna i ny flik.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (!window.location.hash) return;
+
+    e.preventDefault();
+    window.history.replaceState(null, "", window.location.pathname);
+    // replaceState utlöser inget event av sig själv — säg till så att
+    // markeringen släcks direkt.
+    window.dispatchEvent(new Event("hashchange"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function handleLoggaUt() {
     await fetch("/api/auth/logga-ut", { method: "POST" });
@@ -133,7 +178,11 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
 
             {/* Logotyp */}
-            <Link href="/" className="flex flex-col leading-none shrink-0">
+            <Link
+              href="/"
+              onClick={handleLogotypKlick}
+              className="flex flex-col leading-none shrink-0"
+            >
               <span className="text-lg font-bold tracking-tight text-[#1a1a1a]">
                 Re<span className="text-[#2D7A4F]">Loka</span>
               </span>
