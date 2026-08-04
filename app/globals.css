@@ -31,3 +31,19 @@ body {
   outline: 2px solid #2d7a4f;
   outline-offset: 2px;
 }
+
+/* Navbarens menyetiketter.
+   Aktiv länk är fetstil, och fet text är bredare än vanlig — utan detta
+   knuffas grannlänkarna i sidled när markeringen växlar. Extra märkbart för
+   sektionslänken "För företag", som tänds och släcks mitt under scrollning.
+   Vi reserverar därför alltid plats för den feta varianten: en osynlig kopia
+   av texten (data-label) sätter bredden en gång för alla. */
+.meny-etikett::after {
+  content: attr(data-label);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 600;
+  pointer-events: none;
+}

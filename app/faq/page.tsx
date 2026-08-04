@@ -64,8 +64,8 @@ const sektioner = [
         s: "Bostaden ska vara fullt möblerad, ha fungerande WiFi och vara i gott skick. Vi gör alltid en besiktning innan vi listar en bostad.",
       },
       {
-        f: "Hur anmäler jag min bostad?",
-        s: "Fyll i formuläret på vår sida för hyresvärdar, eller ring oss direkt. Vi återkommer inom 24 timmar.",
+        f: "Hur registrerar jag min bostad?",
+        s: "Fyll i formuläret på vår sida för hyresvärdar, eller ring oss direkt. Vi hör av oss för att boka en besiktning.",
       },
     ],
   },

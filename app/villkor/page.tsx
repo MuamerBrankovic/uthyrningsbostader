@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Användarvillkor",
   description:
-    "Villkor för användning av reloka.se — ReLoka AB:s webbplats för möblerade företagsbostäder i Linköping och Norrköping.",
+    "Villkor för användning av reloka.se — ReLoka AB:s webbplats för möblerade företagsbostäder i Linköping.",
 };
 
 const H2_CLS = "text-xl font-semibold text-[#1a1a1a] mt-10 mb-3";
@@ -30,7 +30,7 @@ export default function Villkor() {
           <h2 className={`${H2_CLS} mt-0`}>Om tjänsten</h2>
           <p className={P_CLS}>
             reloka.se drivs av ReLoka AB och förmedlar möblerade bostäder för
-            företag och deras medarbetare i Linköping och Norrköping. Genom att
+            företag och deras medarbetare i Linköping. Genom att
             använda webbplatsen godkänner du dessa villkor.
           </p>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Om oss",
   description:
-    "Lär känna grundarna bakom ReLoka — Muamer och Mahir — och varför vi startade en plattform för företagsbostäder i Linköping och Norrköping.",
+    "Lär känna ReLoka och varför vi startade en plattform för företagsbostäder i Linköping.",
 };
 
 export default function OmOss() {
@@ -17,46 +17,28 @@ export default function OmOss() {
           <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Om oss</span>
           <h1 className="text-4xl font-bold text-[#1a1a1a] mt-3 mb-5">Vi byggde det vi saknade</h1>
           <p className="text-gray-500 text-lg leading-relaxed">
-            ReLoka grundades av Muamer och Mahir efter att de själva upplevt hur frustrerande det är
-            att hitta bra, flexibla bostäder till konsulter på uppdrag. Vi ville göra det enkelt — på riktigt.
+            ReLoka grundades med en tydlig vision att göra bostadsuthyrning enklare, tryggare och
+            smidigare för både konsulter och hyresvärdar.
           </p>
         </div>
       </section>
 
       {/* GRUNDARE */}
       <section className="py-20 px-6 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-[#1a1a1a] mb-12 text-center">Grundarna</h2>
-        <div className="grid md:grid-cols-2 gap-8">
+        <h2 className="text-2xl font-bold text-[#1a1a1a] mb-12 text-center">Grundare</h2>
 
-          {/* Muamer */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-8">
-            <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5">
-              M
-            </div>
-            <h3 className="text-xl font-bold text-[#1a1a1a]">Muamer Brankovic</h3>
-            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Grundare &amp; styrelseledamot</p>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Muamer ansvarar för den digitala närvaron, hemsidan och marknadsföringen. Han driver
-              plattformen och den tekniska infrastrukturen — och tror på att teknik ska förenkla,
-              inte krångla till. Bygger systemen som gör att resten av teamet kan fokusera på det
-              mänskliga mötet med kunder och hyresvärdar.
-            </p>
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 md:p-10 max-w-lg mx-auto text-center">
+          <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5 mx-auto">
+            M
           </div>
-
-          {/* Mahir */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-8">
-            <div className="w-16 h-16 rounded-full bg-[#e8f5ee] flex items-center justify-center text-[#2D7A4F] font-bold text-2xl mb-5">
-              M
-            </div>
-            <h3 className="text-xl font-bold text-[#1a1a1a]">Mahir Brankovic</h3>
-            <p className="text-sm text-[#2D7A4F] font-medium mb-4">Grundare &amp; styrelsesuppleant</p>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Mahir ansvarar för sälj, kundkontakt och bostadsförmedlingen. Med bakgrund inom
-              fastigheter och servicebranschen vet han vad som krävs för att både hyresgäst och
-              hyresvärd ska känna sig trygga. Han är den som lyfter luren när det behövs — och
-              löser det som behöver lösas.
-            </p>
-          </div>
+          <h3 className="text-xl font-bold text-[#1a1a1a]">Muamer Ako Brankovic</h3>
+          <p className="text-sm text-[#2D7A4F] font-medium mb-4">Grundare &amp; styrelseledamot</p>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Muamer ansvarar för ReLokas plattform, digitala närvaro och marknadsföring — och är
+            den som företag och hyresvärdar möter i den löpande kontakten. Han tror på att teknik
+            ska förenkla, inte krångla till: systemen finns till för att göra bokning, avtal och
+            inflyttning så enkla som möjligt för alla inblandade.
+          </p>
         </div>
       </section>
 
@@ -73,14 +55,14 @@ export default function OmOss() {
               ingen ville skriva under.
             </p>
             <p>
-              Muamer och Mahir insåg att det saknades en seriös aktör som förstod B2B-logiken:
-              flexibla avtal, en enda faktura och en kontaktperson att ringa. Inte en app att
-              navigera. Inte 14 hyresvärdar att förhandla med.
+              Det blev tydligt att det saknades en seriös aktör som förstod B2B-logiken: flexibla
+              avtal, en enda faktura och en kontaktperson att ringa. Inte en app att navigera.
+              Inte 14 hyresvärdar att förhandla med.
             </p>
             <p>
-              ReLoka AB grundades 2026 i Linköping av Muamer och Mahir, med fokus på företagsbostäder
-              i Linköping och Norrköping — två städer med stark tillväxt inom tech, industri och
-              offentlig sektor, och ett konstant inflöde av konsulter på uppdrag.
+              ReLoka AB grundades 2026 i Linköping, med fokus på företagsbostäder i staden — en
+              stad med stark tillväxt inom tech, industri och offentlig sektor, och ett konstant
+              inflöde av konsulter på uppdrag.
             </p>
           </div>
         </div>
@@ -95,16 +77,16 @@ export default function OmOss() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
-              titel: "Enkelhet framför allt",
-              text: "Bostad-logistik ska inte kräva en projektledare. Vi tar den bördan och levererar ett enkelt svar.",
+              titel: "Enkelhet",
+              text: "Bostadslogistik ska inte kräva en projektledare. En kontaktperson, ett avtal och en faktura — vi tar hand om resten.",
             },
             {
-              titel: "Lokal kunskap",
-              text: "Vi vet vilka gator som är bra, vilka hyresvärdar som är pålitliga och vilka bostäder som håller vad de lovar.",
+              titel: "Kunskap",
+              text: "Vi kan Linköping, hyresmarknaden och vad ett konsultuppdrag kräver. Därför kan vi matcha rätt bostad direkt istället för att gissa.",
             },
             {
-              titel: "Långsiktiga relationer",
-              text: "Vi vill vara er fasta partner — inte en engångslösning. Det bygger vi på tillit, transparens och ärlighet.",
+              titel: "Relationer",
+              text: "Vi bygger långsiktiga samarbeten med både företag och hyresvärdar. Det kräver att vi håller vad vi lovar — varje gång.",
             },
           ].map((v) => (
             <div key={v.titel} className="bg-white rounded-2xl border border-gray-100 p-7">

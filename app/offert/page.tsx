@@ -238,7 +238,6 @@ export default function OffertSida() {
                   disabled={sending}
                 >
                   <option value="Linköping">Linköping</option>
-                  <option value="Norrköping">Norrköping</option>
                   <option value="Annan">Annan</option>
                 </select>
               </div>

@@ -1,7 +1,7 @@
 import OgImage from "./opengraph-image";
 
 export const runtime = "edge";
-export const alt = "ReLoka — Företagsbostäder i Linköping och Norrköping";
+export const alt = "ReLoka — Företagsbostäder i Linköping";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

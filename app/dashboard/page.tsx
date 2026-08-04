@@ -1733,21 +1733,29 @@ export default function Dashboard() {
             : "Översikt över dina bokningar"}
         </p>
 
-        {/* FLIKAR */}
-        <div className="flex flex-wrap gap-2 bg-white p-1 rounded-xl border border-gray-100 w-fit mb-8 overflow-x-auto max-w-full">
-          {flikar.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setAktivFlik(key)}
-              className={`text-sm px-4 md:px-5 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                aktivFlik === key
-                  ? "bg-[#2D7A4F] text-white"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* FLIKAR — aktiv flik markeras med grönt understreck */}
+        <div
+          role="tablist"
+          className="flex gap-1 sm:gap-2 border-b border-gray-200 mb-8 overflow-x-auto max-w-full"
+        >
+          {flikar.map(({ key, label }) => {
+            const aktiv = aktivFlik === key;
+            return (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={aktiv}
+                onClick={() => setAktivFlik(key)}
+                className={`text-sm px-3 md:px-4 py-3 border-b-[3px] -mb-px transition-colors whitespace-nowrap ${
+                  aktiv
+                    ? "border-[#2D7A4F] text-[#1a1a1a] font-semibold"
+                    : "border-transparent text-gray-400 font-medium hover:text-gray-600 hover:border-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {aktivFlik === "bokningar" && <MinaBokningar bokningar={bokningar} />}

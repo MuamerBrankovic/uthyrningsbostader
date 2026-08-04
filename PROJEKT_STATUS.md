@@ -418,6 +418,79 @@ SMÅFIXAR:
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
 
+## Dag 17
+
+### En stad: Norrköping borttaget ur hela UI:t
+- 0 träffar kvar på "Norrköping" i kod. Ändrat i: layout.tsx (title,
+  description, OG, Twitter), page.tsx (hero-badge, metadata, footer),
+  Navbar (logo-underrad), bostader, hyresvardar, om-oss, offert/layout,
+  offert (stad-dropdown), villkor, opengraph-image (twitter-image ärver),
+  lib/email.ts (endast varumärkesraden i mallhuvudet — ingen utskickslogik).
+- /bostader: stad-filtret HELT borttaget (state, toggle, ?city-param och
+  filtervillkoret). Bostadstyp- och prisfiltret orört.
+- /hyresvardar: stad-dropdownen borttagen ur formuläret. Fältet skickas
+  fortfarande som stad: "Linköping" så API/lead-data ser likadan ut.
+- /offert: stad-dropdownen har kvar Linköping + Annan (stad krävs av zod).
+- KVAR MED FLIT: PROJEKT_STATUS.md och KODGRANSKNING.md nämner Norrköping i
+  daterade historikposter — dokumentation, inte kod, och ska inte skrivas om.
+
+### Startsidan
+- Sektionen "Välj servicenivå" (Medlemskap/Standard/Premium) BORTTAGEN i sin
+  helhet. Avtalstyp i bokningsmodalen, dashboarden och e-postmallarna är
+  ORÖRD — det var bara säljsektionen som togs bort.
+- "Lokal närvaro": de fyra nyckeltalen (48h/100%/1/2h) borttagna, kvar är
+  rubriken "Vi kan Linköping inifrån och ut" + brödtexten. Sektionen smalnades
+  till max-w-2xl och nedre marginalen togs bort så den ser balanserad ut.
+- Hero-rubrik: "utan krångel eller mäklare" → "utan krångel".
+- "Med ReLoka istället": "från 1 månad" struket, kontaktperson/faktura-punkten
+  borttagen, wifi-punkten omskriven. 4 → 3 punkter (grid är items-center).
+
+### Flikar visar var man befinner sig
+- Dashboardens flikrad bytte från pill-stil till understruken flik:
+  3px grönt (#2D7A4F) understreck + text-[#1a1a1a] font-semibold på aktiv,
+  transparent kant + gray-400 på inaktiv. Raden ligger på en border-b-linje
+  med -mb-px så strecket möter linjen. Scrollar horisontellt på mobil.
+  role="tablist"/role="tab"/aria-selected tillagt.
+- Enda flikraden i appen — verifierat med grep.
+
+### Bostadssidan
+- "Om bostaden" visas nu ALLTID (tidigare bara när beskrivning fanns).
+  Egen beskrivning splittas på tomrad till flera stycken; saknas den visas
+  standardBeskrivning() — tre stycken löptext (möblerat/inflyttningsklart,
+  egen nyckel, wifi+hushållsel, kollektivtrafik, flexibla avtal,
+  en kontaktperson). Anpassas efter bostadstyp och använder delade_utrymmen
+  + narmaste_hallplats när de är ifyllda.
+- "Vad ingår"-chippen: ny formateraInkluderat() städar visningen —
+  inledande "och " bort + versal begynnelsebokstav. Chippet "och sophämtning"
+  visas därmed som "Sophämtning". DATAN ÄR ORÖRD; texten kommer från
+  Bostad.inkluderat och står i databasen som
+  ["El","varmvatten","internet","och sophämtning"] (fritext med komma som
+  splittas). Vill ni ha den ren i databasen får den redigeras i dashboarden.
+
+### För hyresvärdar
+- "Anmäl din bostad" → "Registrera din bostad" (processteg 1 + formulärrubrik),
+  knappen "Skicka anmälan" → "Registrera bostad", bekräftelsen
+  "Tack för din anmälan!" → "Tack för din registrering!".
+- "Vi återkommer inom 24 timmar på vardagar." borttagen. Även 24h-löftet i
+  processteg 1, bekräftelserutan och FAQ:ns hyresvärdsfråga ersatt med
+  "vi hör av oss". FAQ-frågan heter nu "Hur registrerar jag min bostad?".
+
+### Om oss
+- Ingressen under "Vi byggde det vi saknade" ersatt med den nya visionstexten.
+- Endast en grundare: "Muamer Ako Brankovic". Tvåkolumnsgriden ersatt med ett
+  centrerat kort (max-w-lg mx-auto text-center, avatar mx-auto) så det inte
+  hänger i en tom kolumn. Rubrik "Grundarna" → "Grundare".
+- "Vår historia" omskriven utan Mahir och utan Norrköping.
+- Värderingar: Enkelhet, Kunskap, Relationer med nya beskrivningar.
+
+### Telefonnummer
+- TELEFON_VISNING = "076-058 65 25" (TELEFON_LANK var redan rätt).
+
+### Verifierat
+- grep Norrköping i kod: 0. grep Mahir i app/: 0.
+- npx tsc --noEmit: rent. npm run build: OK (28 sidor).
+- npm run test:api: 7/7 gröna.
+
 ## Dag 16
 
 ### Grupp 3, DEL 1-3 (DEL 4 = beslutsunderlag, ej byggt)

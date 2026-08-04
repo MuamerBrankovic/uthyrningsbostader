@@ -3,7 +3,7 @@
 // Inget telefonnummer/org.nr ska hårdkodas någon annanstans.
 
 // Visningsformat (svenskt), t.ex. "013-123 45 67"
-export const TELEFON_VISNING = "0760586525";
+export const TELEFON_VISNING = "076-058 65 25";
 
 // tel:-länk i internationellt format, t.ex. "tel:+4613123456"
 export const TELEFON_LANK = "tel:+46760586525";

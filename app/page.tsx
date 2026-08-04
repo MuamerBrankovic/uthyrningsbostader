@@ -4,9 +4,9 @@ import OffertKnapp from "@/app/components/OffertKnapp";
 import { TELEFON_VISNING, TELEFON_LANK, ORGNR_VISNING } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
-  title: "ReLoka — Företagsbostäder i Linköping och Norrköping",
+  title: "ReLoka — Företagsbostäder i Linköping",
   description:
-    "Möblerade bostäder för konsulter och tjänsteresenärer i Linköping och Norrköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
+    "Möblerade bostäder för konsulter och tjänsteresenärer i Linköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
 };
 
 export default function Home() {
@@ -16,11 +16,11 @@ export default function Home() {
       {/* HERO */}
       <section className="px-6 pt-20 pb-24 max-w-5xl mx-auto text-center">
         <span className="inline-block text-xs font-semibold uppercase tracking-widest text-[#2D7A4F] bg-[#e8f5ee] px-4 py-1.5 rounded-full mb-6">
-          Linköping &amp; Norrköping
+          Linköping
         </span>
         <h1 className="text-4xl md:text-5xl font-bold text-[#1a1a1a] leading-tight mb-6">
           Företagsbostäder utan<br className="hidden md:block" />
-          <span className="text-[#2D7A4F]"> krångel eller mäklare</span>
+          <span className="text-[#2D7A4F]"> krångel</span>
         </h1>
         <p className="text-gray-500 text-lg max-w-2xl mx-auto mb-10">
           Vi hjälper HR-chefer och konsultansvariga att snabbt hitta möblerade bostäder till sina konsulter —
@@ -65,9 +65,8 @@ export default function Home() {
               <ul className="space-y-4 text-gray-700 text-sm">
                 {[
                   "Fullt möblerade bostäder redo att flytta in i — direkt.",
-                  "Flexibla avtal från 1 månad, anpassade till konsultuppdrag.",
-                  "En kontaktperson som löser allt. Ni betalar en faktura.",
-                  "Tryggad hyresvärd, besiktat boende, inkl. wifi och hushållsel.",
+                  "Flexibla avtal, anpassade till konsultuppdrag.",
+                  "Besiktat boende, fullt utrustad inklusive wifi.",
                 ].map((s) => (
                   <li key={s} className="flex gap-3">
                     <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full bg-[#e8f5ee] text-[#2D7A4F] flex items-center justify-center text-xs font-bold">✓</span>
@@ -173,90 +172,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TJÄNSTEPAKET */}
-      <section className="py-20 px-6 max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Avtal</span>
-          <h2 className="text-3xl font-bold text-[#1a1a1a] mt-3">Välj servicenivå</h2>
-          <p className="text-gray-500 mt-2 text-sm max-w-lg mx-auto">
-            Alla paket inkluderar fullt möblerat boende. Välj den servicenivå som passar er organisation.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              namn: "Medlemskap",
-              tagline: "Grundläggande tillgång",
-              desc: "Tillgång till hela utbudet med självservice-bokning. Passar företag med intern HR-kapacitet.",
-              features: ["Tillgång till alla bostäder", "Digital bokning", "E-postsupport"],
-              cta: "Kom igång",
-            },
-            {
-              namn: "Standard",
-              tagline: "Rekommenderat",
-              desc: "En dedikerad kontaktperson som hanterar hela bokningsprocessen åt er. Vår populäraste plan.",
-              features: ["Allt i Medlemskap", "Dedikerad kontaktperson", "Prioriterad support", "Fakturahantering"],
-              cta: "Välj Standard",
-              featured: true,
-            },
-            {
-              namn: "Premium",
-              tagline: "Full service",
-              desc: "Vi sköter allt — från bokning till utcheckning och städning. Perfekt för stora konsultbolag.",
-              features: ["Allt i Standard", "Inflyttnings­service", "Städning vid utflyttning", "Volymrabatt", "SLA-garanti"],
-              cta: "Kontakta oss",
-            },
-          ].map((p) => (
-            <div
-              key={p.namn}
-              className={`rounded-2xl p-7 border flex flex-col ${p.featured ? "border-[#2D7A4F] bg-[#f8fdf9] relative" : "border-gray-100 bg-white"}`}
-            >
-              {p.featured && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2D7A4F] text-white text-xs font-semibold px-4 py-1 rounded-full">
-                  Rekommenderas
-                </span>
-              )}
-              <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">{p.tagline}</span>
-              <h3 className="text-xl font-bold text-[#1a1a1a] mt-1 mb-3">{p.namn}</h3>
-              <p className="text-sm text-gray-500 mb-5 leading-relaxed flex-1">{p.desc}</p>
-              <ul className="space-y-2 text-sm text-gray-600 mb-6">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <span className="w-4 h-4 rounded-full bg-[#e8f5ee] text-[#2D7A4F] flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <OffertKnapp label={p.cta} variant={p.featured ? "primary" : "outline"} />
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* VARFÖR LOKALT */}
       <section className="bg-[#1a1a1a] text-white py-20 px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-2xl mx-auto text-center">
           <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Lokal närvaro</span>
           <h2 className="text-3xl font-bold mt-3 mb-6">
-            Vi kan Linköping och Norrköping inifrån och ut
+            Vi kan Linköping
           </h2>
-          <p className="text-gray-300 text-sm leading-relaxed mb-10 max-w-xl mx-auto">
+          <p className="text-gray-300 text-sm leading-relaxed max-w-xl mx-auto">
             Till skillnad från nationella plattformar har vi personlig kännedom om varje bostad, varje hyresvärd
-            och varje stadsdel i de städer vi verkar i. Det ger er trygghet — och er konsult en bra start.
+            och varje stadsdel i staden. Det ger er trygghet — och er konsult en bra start.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
-            {[
-              { num: "48h", label: "Vårt mål: från kontakt till avtal" },
-              { num: "100%", label: "Besiktade och godkända bostäder" },
-              { num: "1", label: "Faktura per uppdrag — oavsett antal rum" },
-              { num: "2h", label: "Vi svarar inom 2 timmar på vardagar" },
-            ].map((s) => (
-              <div key={s.label}>
-                <p className="text-3xl font-bold text-[#2D7A4F]">{s.num}</p>
-                <p className="text-xs text-gray-400 mt-1 leading-snug">{s.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -311,7 +237,7 @@ export default function Home() {
             <div>
               <div className="flex flex-col leading-none mb-3">
                 <span className="text-white font-bold text-lg">Re<span className="text-[#2D7A4F]">Loka</span> AB</span>
-                <span className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">Linköping &amp; Norrköping</span>
+                <span className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">Linköping</span>
               </div>
               <p className="text-sm max-w-xs leading-relaxed">
                 Möblerade företagsbostäder med personlig service. Vi gör boende-logistiken enkel för HR och konsultbolag.

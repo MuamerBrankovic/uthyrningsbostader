@@ -125,6 +125,16 @@ function StatusCirkel({ status }: { status: RumStatus }) {
   );
 }
 
+// ─── "Vad ingår"-etiketter ────────────────────────────────────────────────────
+
+// Listan skrivs in som fritext med komma ("El, vatten och sophämtning"), så
+// sista posten hamnar i databasen som "och sophämtning". Vi städar visningen
+// istället för att ändra i datan: leading "och" bort, versal första bokstav.
+function formateraInkluderat(text: string): string {
+  const rensad = text.trim().replace(/^och\s+/i, "");
+  return rensad.charAt(0).toUpperCase() + rensad.slice(1);
+}
+
 // ─── Bostadstyp-badge ──────────────────────────────────────────────────────────
 
 function BostadstypBadge({ typ }: { typ: string }) {
@@ -201,7 +211,7 @@ function Fastighetskort({ bostad, onSeRum }: { bostad: Bostad; onSeRum: () => vo
           <div className="flex flex-wrap gap-1.5">
             {bostad.inkluderat.map((i) => (
               <span key={i} className="text-xs bg-[#e8f5ee] text-[#2D7A4F] px-2.5 py-1 rounded-full">
-                {i}
+                {formateraInkluderat(i)}
               </span>
             ))}
           </div>
@@ -216,6 +226,40 @@ function Fastighetskort({ bostad, onSeRum }: { bostad: Bostad; onSeRum: () => vo
       </button>
     </div>
   );
+}
+
+// ─── "Om bostaden" ────────────────────────────────────────────────────────────
+
+// Generell men konkret text när hyresvärden inte skrivit någon beskrivning.
+// Anpassas efter bostadstyp och de fält som faktiskt är ifyllda.
+function standardBeskrivning(bostad: Bostad): string[] {
+  const helLagenhet = bostad.bostadstyp === "hel_lagenhet";
+
+  const utrymmen =
+    bostad.delade_utrymmen.length > 0
+      ? bostad.delade_utrymmen.join(", ").toLowerCase()
+      : "kök, vardagsrum och badrum";
+
+  const hallplats = bostad.narmaste_hallplats
+    ? `Närmaste hållplats är ${bostad.narmaste_hallplats}, vilket gör resan till uppdraget enkel utan egen bil.`
+    : "Läget ger god tillgång till kollektivtrafik, vilket gör resan till uppdraget enkel utan egen bil.";
+
+  return [
+    helLagenhet
+      ? "Bostaden är fullt möblerad och inflyttningsklar. Konsulten disponerar hela lägenheten med egen nyckel och har det som behövs för vardagen på plats från första dagen — säng, förvaring, arbetsplats och köksutrustning."
+      : `Bostaden är fullt möblerad och inflyttningsklar. Konsulten får ett eget rum med egen nyckel och det som behövs för vardagen på plats från första dagen. Gemensamma utrymmen som ${utrymmen} delas med övriga boende.`,
+    `Wifi och hushållsel ingår i hyran — inga separata abonnemang eller avräkningar att hålla reda på. ${hallplats}`,
+    "Avtalet är flexibelt och anpassas efter uppdragets längd. Ni har en kontaktperson hos ReLoka under hela hyresperioden — från visning och avtal till inflyttning och frågor längs vägen.",
+  ];
+}
+
+function omBostadenStycken(bostad: Bostad): string[] {
+  const egen = bostad.beskrivning
+    ?.split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return egen && egen.length > 0 ? egen : standardBeskrivning(bostad);
 }
 
 // ─── Popup-innehåll ───────────────────────────────────────────────────────────
@@ -496,12 +540,16 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
 
         {/* INFO-KORT */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {bostad.beskrivning && (
-            <div className="md:col-span-3 bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-[#1a1a1a] mb-3">Om bostaden</h2>
-              <p className="text-base text-gray-700 leading-relaxed">{bostad.beskrivning}</p>
+          <div className="md:col-span-3 bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
+            <h2 className="text-lg font-semibold text-[#1a1a1a] mb-4">Om bostaden</h2>
+            <div className="space-y-4 max-w-3xl">
+              {omBostadenStycken(bostad).map((stycke, i) => (
+                <p key={i} className="text-base text-gray-700 leading-relaxed">
+                  {stycke}
+                </p>
+              ))}
             </div>
-          )}
+          </div>
 
           {bostad.delade_utrymmen.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -526,7 +574,7 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
                     key={item}
                     className="text-xs font-medium bg-[#e8f5ee] text-[#2D7A4F] px-3 py-1.5 rounded-full"
                   >
-                    {item}
+                    {formateraInkluderat(item)}
                   </span>
                 ))}
               </div>

@@ -91,7 +91,7 @@ function wrapper(innehall: string): string {
           <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;">
             Re<span style="color:${GRON};">Loka</span>
           </div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:2px;letter-spacing:0.5px;">Linköping &amp; Norrköping</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px;letter-spacing:0.5px;">Linköping</div>
         </div>
         <div style="padding:32px;">
           ${innehall}

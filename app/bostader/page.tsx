@@ -5,8 +5,6 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import BildPlatshallare from "@/app/components/BildPlatshallare";
 
-const STADER = ["Linköping", "Norrköping"] as const;
-
 const BOSTADSTYPER: { label: string; value: string }[] = [
   { label: "Alla typer", value: "" },
   { label: "Privat rum", value: "privat_rum" },
@@ -58,10 +56,6 @@ function BostaderContent() {
   const isInitialRender = useRef(true);
 
   const [bostader, setBostader] = useState<Bostad[]>([]);
-  const [valdaStader, setValdaStader] = useState<string[]>(() => {
-    const city = searchParams.get("city");
-    return city ? [city] : [...STADER];
-  });
   const [bostadstyp, setBostadstyp] = useState(searchParams.get("typ") ?? "");
   const [maxPris, setMaxPris] = useState(Number(searchParams.get("prisMax")) || 30000);
   const [laddar, setLaddar] = useState(true);
@@ -82,30 +76,17 @@ function BostaderContent() {
       return;
     }
     const params = new URLSearchParams();
-    if (valdaStader.length === 1) params.set("city", valdaStader[0]);
     if (bostadstyp) params.set("typ", bostadstyp);
     if (maxPris !== 30000) params.set("prisMax", String(maxPris));
     router.replace(`/bostader?${params.toString()}`);
-  }, [valdaStader, bostadstyp, maxPris]);
-
-  function toggleStad(stad: string) {
-    setValdaStader((prev) =>
-      prev.includes(stad)
-        ? prev.filter((s) => s !== stad)
-        : [...prev, stad]
-    );
-  }
+  }, [bostadstyp, maxPris]);
 
   const filtrerade = bostader.filter((b) => {
-    const adressText = `${b.stadsdel ?? ""} ${b.adress ?? ""} ${b.namn}`.toLowerCase();
-    const matchStad =
-      valdaStader.length === 0 ||
-      valdaStader.some((s) => adressText.includes(s.toLowerCase()));
     const matchTyp = !bostadstyp || b.bostadstyp === bostadstyp;
     const priser = b.rum.map((r) => r.manadshyra);
     const minPris = priser.length > 0 ? Math.min(...priser) : 0;
     const matchPris = priser.length === 0 || minPris <= maxPris;
-    return matchStad && matchTyp && matchPris;
+    return matchTyp && matchPris;
   });
 
   return (
@@ -116,34 +97,12 @@ function BostaderContent() {
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-[#1a1a1a] mb-1">Lediga bostäder</h1>
           <p className="text-gray-400 text-sm">
-            Möblerade bostäder för konsulter i Linköping och Norrköping
+            Möblerade bostäder för konsulter i Linköping
           </p>
         </div>
 
         {/* FILTER */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 space-y-5">
-
-          {/* Stad */}
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-              Stad
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {STADER.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => toggleStad(s)}
-                  className={`text-sm px-4 py-2 rounded-full border transition-colors ${
-                    valdaStader.includes(s)
-                      ? "bg-[#2D7A4F] text-white border-[#2D7A4F]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#2D7A4F]"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="flex flex-col md:flex-row gap-5">
             {/* Bostadstyp */}

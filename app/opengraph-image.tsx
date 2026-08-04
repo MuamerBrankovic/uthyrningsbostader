@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "ReLoka — Företagsbostäder i Linköping och Norrköping";
+export const alt = "ReLoka — Företagsbostäder i Linköping";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,7 +46,7 @@ export default async function Image() {
               color: "#2D7A4F",
             }}
           >
-            Linköping &amp; Norrköping
+            Linköping
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export default async function Image() {
                 background: "#2D7A4F",
               }}
             />
-            B2B · Linköping &amp; Norrköping
+            B2B · Linköping
           </div>
         </div>
 

@@ -9,7 +9,8 @@ export default function Hyresvardar() {
     namn: "",
     telefon: "",
     email: "",
-    stad: "",
+    // Vi verkar bara i Linköping — fältet visas därför inte i formuläret.
+    stad: "Linköping",
     adress: "",
     meddelande: "",
   });
@@ -111,7 +112,7 @@ export default function Hyresvardar() {
           </div>
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              { num: "1", title: "Anmäl din bostad", desc: "Fyll i formuläret nedan eller ring oss. Vi återkommer inom 24 timmar." },
+              { num: "1", title: "Registrera din bostad", desc: "Fyll i formuläret nedan eller ring oss så hör vi av oss." },
               { num: "2", title: "Besiktning", desc: "Vi besiktar bostaden och dokumenterar skicket. Det skyddar båda parter." },
               { num: "3", title: "Listning", desc: "Bostaden listas i vår plattform och matchas mot aktuell efterfrågan." },
               { num: "4", title: "Uthyrning", desc: "Vi hanterar avtal, inflyttning och kontakt. Du får hyran i tid varje månad." },
@@ -132,14 +133,16 @@ export default function Hyresvardar() {
       <section className="py-20 px-6 max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <span className="text-xs font-semibold uppercase tracking-widest text-[#2D7A4F]">Kom igång</span>
-          <h2 className="text-3xl font-bold text-[#1a1a1a] mt-3">Anmäl din bostad</h2>
-          <p className="text-gray-500 text-sm mt-2">Vi återkommer inom 24 timmar på vardagar.</p>
+          <h2 className="text-3xl font-bold text-[#1a1a1a] mt-3">Registrera din bostad</h2>
+          <p className="text-gray-500 text-sm mt-2">
+            Fyll i formuläret så hör vi av oss för att boka en besiktning.
+          </p>
         </div>
 
         {status === "done" ? (
           <div className="bg-[#e8f5ee] border border-[#c8e8d8] rounded-2xl p-10 text-center">
-            <p className="text-[#2D7A4F] font-semibold text-lg mb-2">Tack för din anmälan!</p>
-            <p className="text-gray-600 text-sm">Vi återkommer inom 24 timmar för att boka ett besök.</p>
+            <p className="text-[#2D7A4F] font-semibold text-lg mb-2">Tack för din registrering!</p>
+            <p className="text-gray-600 text-sm">Vi hör av oss för att boka ett besök.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-8 space-y-5">
@@ -194,35 +197,18 @@ export default function Hyresvardar() {
               />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-5">
-              <div>
-                <label htmlFor="hv-stad" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-                  Stad
-                </label>
-                <select
-                  id="hv-stad"
-                  value={form.stad}
-                  onChange={(e) => update("stad", e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
-                >
-                  <option value="">Välj stad</option>
-                  <option value="Linköping">Linköping</option>
-                  <option value="Norrköping">Norrköping</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="hv-adress" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-                  Adress
-                </label>
-                <input
-                  id="hv-adress"
-                  type="text"
-                  value={form.adress}
-                  onChange={(e) => update("adress", e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
-                  placeholder="Gatuadress"
-                />
-              </div>
+            <div>
+              <label htmlFor="hv-adress" className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
+                Adress
+              </label>
+              <input
+                id="hv-adress"
+                type="text"
+                value={form.adress}
+                onChange={(e) => update("adress", e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors"
+                placeholder="Gatuadress, Linköping"
+              />
             </div>
 
             <div>
@@ -248,7 +234,7 @@ export default function Hyresvardar() {
               disabled={status === "sending"}
               className="w-full bg-[#2D7A4F] text-white text-sm font-semibold py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-60"
             >
-              {status === "sending" ? "Skickar..." : "Skicka anmälan"}
+              {status === "sending" ? "Skickar..." : "Registrera bostad"}
             </button>
 
             <p className="text-xs text-gray-400 text-center">
