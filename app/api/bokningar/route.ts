@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { ApiFel } from "@/lib/apifel";
 import { lasJson, validera, bokningSchema } from "@/lib/validering";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET(request: Request) {
   try {
@@ -66,6 +67,7 @@ export async function GET(request: Request) {
     return Response.json(bokningar);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bokningar");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }
@@ -192,11 +194,15 @@ export async function POST(request: Request) {
       bokning,
       { namn: rum.namn, manadshyra: rum.manadshyra },
       rum.bostad
-    ).catch((err) => console.error("[email] Uncaught bokningsmail-fel:", err));
+    ).catch((err) => {
+      console.error("[email] Uncaught bokningsmail-fel:", err);
+      rapporteraFel(err, "email.bokningsmail.uncaught", { bokning_id: bokning.id });
+    });
 
     return Response.json(bokning, { status: 201 });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bokningar");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

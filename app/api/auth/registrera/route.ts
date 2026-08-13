@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { lasJson, validera, registreraSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function POST(request: Request) {
   const stoppad = rateLimit(request, "registrera", { max: 5, fonsterMs: 15 * 60 * 1000 });
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.auth.registrera");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { lasJson, validera, hyresvardPatchSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function PATCH(
   request: Request,
@@ -39,6 +40,7 @@ export async function PATCH(
     return Response.json(anmalan);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.hyresvardar.patch");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

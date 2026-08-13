@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export const runtime = "nodejs";
 
@@ -81,6 +82,9 @@ export async function POST(request: NextRequest) {
     return Response.json(uppdaterad);
   } catch (err) {
     console.error("[kontrakt] Uppladdningsfel:", err);
+    // Kontraktsuppladdning: tyst fel här betyder att admin tror att PDF:en
+    // sparats fast den inte gjort det. Filnamn/URL rapporteras ALDRIG.
+    rapporteraFel(err, "api.kontrakt.uppladdning");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

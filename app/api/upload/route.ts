@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import sharp from "sharp";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
       .toBuffer();
   } catch (err) {
     console.error("[upload] sharp-fel:", err);
+    rapporteraFel(err, "api.upload.bildbearbetning");
     return Response.json({ error: "Kunde inte bearbeta bilden" }, { status: 400 });
   }
 

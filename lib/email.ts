@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { formateraDatum } from "@/lib/datum";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 const GRON = "#2D7A4F";
 const MORK = "#1a1a1a";
@@ -270,6 +271,11 @@ export async function skickaBokningsmail(
     const fel = svar.map(resendFel).filter((f): f is string => f !== null);
     if (fel.length > 0) {
       console.error("[email] Bokningsmail nekades av Resend:", fel.join(" | "));
+      rapporteraFel(fel.join(" | "), "email.bokningsmail.nekat", {
+        bokning_id: bokning.id,
+        rum: rum.namn,
+        bostad: bostad.namn,
+      });
       return { ok: false, error: fel.join(" | ") };
     }
     console.log(
@@ -278,6 +284,11 @@ export async function skickaBokningsmail(
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka bokningsmail:", err);
+    rapporteraFel(err, "email.bokningsmail.kastade", {
+      bokning_id: bokning.id,
+      rum: rum.namn,
+      bostad: bostad.namn,
+    });
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -420,6 +431,12 @@ export async function skickaBokningsstatusMail(
         `[email] Statusmejl (${nyStatus}) till ${bokning.email} NEKADES av Resend:`,
         fel
       );
+      rapporteraFel(fel, "email.statusmail.nekat", {
+        bokning_id: bokning.id,
+        ny_status: nyStatus,
+        rum: rum.namn,
+        bostad: bostad.namn,
+      });
       return { ok: false, error: fel };
     }
     console.log(
@@ -428,6 +445,12 @@ export async function skickaBokningsstatusMail(
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka statusmail:", err);
+    rapporteraFel(err, "email.statusmail.kastade", {
+      bokning_id: bokning.id,
+      ny_status: nyStatus,
+      rum: rum.namn,
+      bostad: bostad.namn,
+    });
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -504,12 +527,14 @@ export async function skickaHyresvardsnotisMail(
     const fel = resendFel(svar);
     if (fel) {
       console.error("[email] Hyresvärdsnotis nekades av Resend:", fel);
+      rapporteraFel(fel, "email.hyresvardsnotis.nekat", { anmalan_id: anmalan.id });
       return { ok: false, error: fel };
     }
     console.log(`[email] Hyresvärdsnotis skickad till ${adminEmail}`);
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka hyresvärdsnotis:", err);
+    rapporteraFel(err, "email.hyresvardsnotis.kastade", { anmalan_id: anmalan.id });
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -643,6 +668,10 @@ export async function skickaOffertmail(
     const fel = svar.map(resendFel).filter((f): f is string => f !== null);
     if (fel.length > 0) {
       console.error("[email] Offertmail nekades av Resend:", fel.join(" | "));
+      rapporteraFel(fel.join(" | "), "email.offertmail.nekat", {
+        offert_id: offert.id,
+        stad: offert.stad,
+      });
       return { ok: false, error: fel.join(" | ") };
     }
     console.log(
@@ -651,6 +680,10 @@ export async function skickaOffertmail(
     return { ok: true };
   } catch (err) {
     console.error("[email] Misslyckades skicka offertmail:", err);
+    rapporteraFel(err, "email.offertmail.kastade", {
+      offert_id: offert.id,
+      stad: offert.stad,
+    });
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { skickaOffertmail } from "@/lib/email";
 import { rateLimit } from "@/lib/ratelimit";
 import { lasJson, validera, offertSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -62,15 +63,17 @@ export async function POST(request: Request) {
 
     // Mail awaitas så Vercel inte river funktionen innan det skickats;
     // .catch bevarar fail-safe: ett mejlfel blockerar inte att offerten sparats.
-    await skickaOffertmail(offert).catch((err) =>
-      console.error("[email] Uncaught offertmail-fel:", err)
-    );
+    await skickaOffertmail(offert).catch((err) => {
+      console.error("[email] Uncaught offertmail-fel:", err);
+      rapporteraFel(err, "email.offertmail.uncaught", { offert_id: offert.id });
+    });
 
     // Vitlistat svar — interna fält (status, intern_notering) får aldrig
     // lämna servern på detta publika endpoint
     return Response.json({ ok: true, id: offert.id }, { status: 201 });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.offert");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

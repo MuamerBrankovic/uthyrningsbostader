@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { lasJson, validera, loggaInSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 // Jämförs mot när e-posten inte finns, så att svarstiden inte avslöjar
 // vilka adresser som är registrerade
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     return Response.json({ id: user.id, email: user.email, namn: user.namn, roll: user.roll });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.auth.logga-in");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET(
   _request: Request,
@@ -32,6 +33,7 @@ export async function GET(
     return Response.json(bostad);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bostader.detalj");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

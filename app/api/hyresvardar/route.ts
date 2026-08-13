@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { lasJson, validera, hyresvardSchema } from "@/lib/validering";
 import { skickaHyresvardsnotisMail } from "@/lib/email";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -41,15 +42,17 @@ export async function POST(request: Request) {
 
     // Adminnotis — awaitas så Vercel inte river funktionen innan mejlet
     // skickats; .catch bevarar fail-safe: ett mejlfel blockerar inte att anmälan sparats.
-    await skickaHyresvardsnotisMail(anmalan).catch((err) =>
-      console.error("[email] Uncaught hyresvärdsnotis-fel:", err)
-    );
+    await skickaHyresvardsnotisMail(anmalan).catch((err) => {
+      console.error("[email] Uncaught hyresvärdsnotis-fel:", err);
+      rapporteraFel(err, "email.hyresvardsnotis.uncaught", { anmalan_id: anmalan.id });
+    });
 
     // Vitlistat svar — interna fält (status, intern_notering) får aldrig
     // lämna servern på detta publika endpoint
     return Response.json({ ok: true, id: anmalan.id }, { status: 201 });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.hyresvardar");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

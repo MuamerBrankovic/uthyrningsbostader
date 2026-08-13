@@ -5,6 +5,7 @@ import { ApiFel } from "@/lib/apifel";
 import { lasJson, validera, bokningPatchSchema } from "@/lib/validering";
 import { skickaBokningsstatusMail } from "@/lib/email";
 import { BOKNING_STATUS, type BokningStatus } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function PATCH(
   request: Request,
@@ -155,7 +156,13 @@ export async function PATCH(
         { namn: bokning.rum.namn, manadshyra: bokning.rum.manadshyra },
         bokning.rum.bostad,
         nyStatus
-      ).catch((err) => console.error("[email] Uncaught statusmail-fel:", err));
+      ).catch((err) => {
+        console.error("[email] Uncaught statusmail-fel:", err);
+        rapporteraFel(err, "email.statusmail.uncaught", {
+          bokning_id: bokning.id,
+          ny_status: nyStatus,
+        });
+      });
     } else if (nyStatus !== undefined) {
       console.log(
         `[email] Inget statusmejl för bokning ${bokning.id}: status ${tidigareStatus} → ${nyStatus} (oförändrad eller ej mejlgrundande)`
@@ -165,6 +172,7 @@ export async function PATCH(
     return Response.json(bokning);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bokningar.patch");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

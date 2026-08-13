@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/auth";
 import { lasJson, validera, bytLosenordSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function POST(request: Request) {
   try {
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.auth.byt-losenord");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

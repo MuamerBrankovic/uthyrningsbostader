@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { lasJson, validera, rumSchema } from "@/lib/validering";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function POST(request: Request) {
   try {
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
     return Response.json(rum, { status: 201 });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.rum");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

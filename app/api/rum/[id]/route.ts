@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET(
   _request: Request,
@@ -28,6 +29,7 @@ export async function GET(
     return Response.json(rum);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.rum.detalj");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }

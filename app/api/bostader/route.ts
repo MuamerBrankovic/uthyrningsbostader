@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { lasJson, validera, bostadSchema } from "@/lib/validering";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export async function GET() {
   try {
@@ -24,6 +25,7 @@ export async function GET() {
     return Response.json(bostader);
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bostader");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }
@@ -66,6 +68,7 @@ export async function POST(request: Request) {
     return Response.json(bostad, { status: 201 });
   } catch (err) {
     console.error(err);
+    rapporteraFel(err, "api.bostader");
     return Response.json({ error: "Serverfel" }, { status: 500 });
   }
 }
