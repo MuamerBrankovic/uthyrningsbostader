@@ -102,10 +102,21 @@ export default function Integritetspolicy() {
           <p className={P_CLS}>
             Uppgifterna behandlas av oss och av våra leverantörer
             (personuppgiftsbiträden) som behövs för att driva tjänsten: Vercel
-            (drift och cookielös statistik), Neon (databas) och Resend
-            (e-postutskick). Vi har biträdesavtal med leverantörerna. I den mån
-            uppgifter överförs utanför EU/EES sker det med giltiga
-            överföringsmekanismer, t.ex. EU-kommissionens standardavtalsklausuler.
+            (drift och cookielös statistik), Neon (databas), Resend
+            (e-postutskick) och Sentry, Functional Software, Inc.
+            (felövervakning och teknisk diagnostik i produktion). Vi har
+            biträdesavtal med leverantörerna. I den mån uppgifter överförs
+            utanför EU/EES sker det med giltiga överföringsmekanismer, t.ex.
+            EU-kommissionens standardavtalsklausuler.
+          </p>
+          <p className={P_CLS}>
+            Sentry tar emot teknisk feldata — felmeddelanden, stacktraces,
+            adresser till de sidor där felet uppstod och information om servern
+            — så att vi kan upptäcka och rätta fel som drabbar användare. Inga
+            personuppgifter lagras: e-postadresser, telefonnummer, cookies och
+            inloggningsuppgifter rensas bort innan uppgifterna lämnar vår
+            server. Datan lagras inom EU, och Sentry omfattas av GDPR och av
+            EU-US Data Privacy Framework.
           </p>
 
           <h2 className={H2_CLS}>Cookies</h2>
