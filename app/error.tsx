@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 // Fångar oväntade fel i sidor och layouter under rot-layouten. Kraschar
 // rot-layouten själv tar app/global-error.tsx över i stället.
@@ -17,6 +18,12 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
+    // Utan det här anropet syns felet ingenstans: Next.js felgräns fångar
+    // felet, så det bubblar aldrig vidare till Sentrys automatiska fångst.
+    // Inga persondatafält skickas med — digest är en hash av felet, och
+    // gör att ett serverfel går att para ihop med den händelse
+    // onRequestError (instrumentation.ts) redan rapporterat för samma fel.
+    rapporteraFel(error, "ui.felgrans", { digest: error.digest ?? null });
   }, [error]);
 
   return (

@@ -4,6 +4,8 @@
 // varken Navbar eller layoutens <html>/<body>, så den här filen måste rita
 // upp dem själv och importera de globala stilarna på egen hand.
 import "./globals.css";
+import { useEffect } from "react";
+import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export default function GlobalError({
   error,
@@ -12,6 +14,15 @@ export default function GlobalError({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
+  useEffect(() => {
+    console.error(error);
+    // Ett fel som tar sig ända hit har slagit ut rot-layouten. Felgränsen
+    // hindrar det från att bubbla vidare till Sentrys automatiska fångst,
+    // så utan det här anropet skulle den allvarligaste feltypen vi har bli
+    // den enda vi aldrig fick veta om. Inga persondatafält skickas med.
+    rapporteraFel(error, "ui.global-felgrans", { digest: error.digest ?? null });
+  }, [error]);
+
   return (
     <html lang="sv">
       <body>
