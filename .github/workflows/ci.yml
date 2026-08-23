@@ -1,7 +1,12 @@
 name: CI
 
-# Körs vid varje push och varje pull request.
-on: [push, pull_request]
+# Push endast på main, plus varje pull request. Då körs varje ändring exakt
+# en gång: på pull requesten före merge, och på main efter. Trigger på all
+# push hade dubbelkört varje PR från en gren i samma repo.
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
