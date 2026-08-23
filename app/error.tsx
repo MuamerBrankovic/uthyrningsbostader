@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
 import { skapaForsokIgen } from "@/lib/felgrans";
+import { EPOST } from "@/lib/kontakt";
 
 // Fångar oväntade fel i sidor och layouter under rot-layouten. Kraschar
 // rot-layouten själv tar app/global-error.tsx över i stället.
@@ -39,10 +40,10 @@ export default function Error({
           Ett oväntat fel uppstod när sidan skulle visas. Försök igen — hjälper
           det inte är du välkommen att höra av dig till{" "}
           <a
-            href="mailto:info@reloka.se"
+            href={`mailto:${EPOST}`}
             className="text-[#2D7A4F] hover:underline"
           >
-            info@reloka.se
+            {EPOST}
           </a>
           .
         </p>

@@ -7,6 +7,7 @@ import "./globals.css";
 import { useEffect } from "react";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
 import { skapaForsokIgen } from "@/lib/felgrans";
+import { EPOST } from "@/lib/kontakt";
 
 export default function GlobalError({
   error,
@@ -46,10 +47,10 @@ export default function GlobalError({
               Ett oväntat fel gjorde att sidan inte kunde visas. Försök igen —
               hjälper det inte är du välkommen att höra av dig till{" "}
               <a
-                href="mailto:info@reloka.se"
+                href={`mailto:${EPOST}`}
                 className="text-[#2D7A4F] hover:underline"
               >
-                info@reloka.se
+                {EPOST}
               </a>
               .
             </p>

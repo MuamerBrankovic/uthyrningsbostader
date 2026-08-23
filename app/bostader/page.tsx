@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BedDouble } from "lucide-react";
 import BildPlatshallare from "@/app/components/BildPlatshallare";
+import { EPOST } from "@/lib/kontakt";
 
 // Slutvärdet på hyresreglaget. Används på fyra ställen (startvärde, URL-synk,
 // reglagets max och nollställningen) — de måste vara samma tal, annars går
@@ -82,8 +83,8 @@ function IngaBostaderPublicerade() {
       </Link>
       <p className="text-xs text-gray-400 mt-5">
         Eller mejla oss direkt på{" "}
-        <a href="mailto:info@reloka.se" className="text-[#2D7A4F] hover:underline">
-          info@reloka.se
+        <a href={`mailto:${EPOST}`} className="text-[#2D7A4F] hover:underline">
+          {EPOST}
         </a>
       </p>
     </div>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/components/SessionProvider";
+import { EPOST } from "@/lib/kontakt";
 
 export default function LoggaIn() {
   const [email, setEmail] = useState("");
@@ -101,7 +102,7 @@ export default function LoggaIn() {
           <p className="text-right text-xs text-gray-400 mb-6">
             Glömt lösenordet?{" "}
             <a
-              href="mailto:info@reloka.se?subject=Gl%C3%B6mt%20l%C3%B6senord"
+              href={`mailto:${EPOST}?subject=Gl%C3%B6mt%20l%C3%B6senord`}
               className="text-[#2D7A4F] hover:underline"
             >
               Kontakta oss
