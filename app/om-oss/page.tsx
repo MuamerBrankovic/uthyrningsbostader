@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EPOST } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
   title: "Om oss",
@@ -107,7 +108,7 @@ export default function OmOss() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href="mailto:info@reloka.se"
+              href={`mailto:${EPOST}`}
               className="inline-block bg-white text-[#2D7A4F] text-sm font-semibold px-8 py-3.5 rounded-full hover:bg-gray-50 transition-colors"
             >
               Kontakta oss

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ORGNR_VISNING } from "@/lib/kontakt";
+import { ORGNR_VISNING, EPOST } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
   title: "Integritetspolicy",
@@ -137,8 +137,8 @@ export default function Integritetspolicy() {
           </ul>
           <p className={P_CLS}>
             Kontakta oss på{" "}
-            <a href="mailto:info@reloka.se" className="text-[#2D7A4F] hover:underline">
-              info@reloka.se
+            <a href={`mailto:${EPOST}`} className="text-[#2D7A4F] hover:underline">
+              {EPOST}
             </a>{" "}
             så hjälper vi dig. Du har också rätt att lämna klagomål till
             Integritetsskyddsmyndigheten (
