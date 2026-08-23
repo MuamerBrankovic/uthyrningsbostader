@@ -1,7 +1,7 @@
 # Deploy-guide — UthyrningsBostäder
 
-> Senast uppdaterad: 2026-04-22  
-> Stack: Next.js 16 · Supabase · Tailwind CSS · Vercel
+> Senast uppdaterad: 2026-08-23  
+> Stack: Next.js 16 · Prisma 7 + Neon Postgres · Tailwind CSS · Vercel
 
 ---
 
@@ -10,8 +10,8 @@
 Öppna terminalen i projektroten och kör:
 
 ```bash
-git add app/ lib/ types/ public/ PROJEKT_STATUS.md package.json package-lock.json
-git commit -m "feat: complete MVP with auth, listings, bookings, RLS and navbar"
+git add app/ lib/ prisma/ public/ PROJEKT_STATUS.md package.json package-lock.json
+git commit -m "feat: complete MVP with auth, listings, bookings and navbar"
 ```
 
 Kontrollera att .env.local INTE är med:
@@ -71,15 +71,20 @@ git push -u origin main
 I Vercel-projektets inställningspanel (visas under import-flödet):
 
 1. Klicka **Environment Variables**
-2. Lägg till dessa två variabler — kopiera värdena från din lokala `.env.local`:
+2. Lägg till variablerna nedan — kopiera värdena från din lokala `.env` / `.env.local`:
 
-| Variable name | Environments |
+| Variable name | Krävs? |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Production ✅ Preview ✅ Development |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Production ✅ Preview ✅ Development |
+| `DATABASE_URL` | **Ja.** Anslutningssträngen till Neon. Inget fungerar utan den. |
+| `JWT_SECRET` | **Ja.** Servern vägrar starta i produktion om den saknas (avsiktligt — se `lib/auth.ts`). |
+| `BLOB_READ_WRITE_TOKEN` | För bild- och kontraktsuppladdning. Sätts automatiskt när du kopplar en Blob-store till projektet. |
+| `RESEND_API_KEY` | För mejlutskick. Saknas den hoppas alla utskick tyst över. |
+| `AVSANDAR_EMAIL` | Avsändaradress. Faller tillbaka på `no-reply@reloka.se`. |
+| `ADMIN_EMAIL` | Mottagare för adminnotiser. Saknas den skickas inga notiser. |
+| `NEXT_PUBLIC_SENTRY_DSN` | Felövervakning. Saknas den är Sentry helt avstängt. |
 
-> Öppna `.env.local` lokalt, kopiera värdet efter `=` för varje rad.  
-> Sätt båda variablerna på **alla tre environments** (Production, Preview, Development).
+> Sätt variablerna på **alla tre environments** (Production, Preview, Development).  
+> `JWT_SECRET` måste finnas i samtliga — annars failar deployen.
 
 ---
 
@@ -95,41 +100,21 @@ Klicka på URL:en för att öppna sidan live.
 
 ---
 
-## Steg 6 — Supabase URL-konfiguration (KRITISKT — annars bryts login)
-
-Supabase skickar auth-redirects (efter registrering/lösenordsåterställning) till en godkänd URL. Utan detta steg hamnar användaren på `localhost:3000` efter att ha klickat en bekräftelselänk i produktionsmiljön.
-
-1. Logga in på [supabase.com](https://supabase.com) → välj ditt projekt
-2. Gå till **Authentication → URL Configuration**
-3. Uppdatera:
-
-| Fält | Värde |
-|---|---|
-| **Site URL** | `https://reloka.se` |
-| **Redirect URLs** | `https://reloka.se/**` |
-
-> Ersätt domänen med din faktiska produktions-URL vid behov.  
-> `/**` i slutet täcker alla undersidor (t.ex. `/dashboard`, `/logga-in`).
-
-4. Klicka **Save**
-
----
-
-## Steg 7 — Testplan på live-URL:en
+## Steg 6 — Testplan på live-URL:en
 
 Testa dessa flöden i ordning efter deploy:
 
 | # | Flöde | Förväntat resultat |
 |---|---|---|
 | 1 | Öppna startsidan | Laddas, navbar syns |
-| 2 | Gå till `/bostader` | Bostäder hämtas från Supabase |
+| 2 | Gå till `/bostader` | Bostäder hämtas från databasen. Finns inga än visas "Bostäderna publiceras inom kort" med knapp till offertförfrågan |
 | 3 | Sök på stad i sökfältet på startsidan | Omdirigeras till `/bostader?city=...` med filter förifyllt |
-| 4 | Registrera ett nytt konto | Bekräftelsemail skickas, konto skapas |
+| 4 | Registrera ett nytt konto | Konto skapas med rollen `hyresgast` och du loggas in direkt |
 | 5 | Logga in | Dashboard-länk syns i navbar |
 | 6 | Lägg upp en bostad via Dashboard | Bostaden dyker upp i `/bostader` |
 | 7 | Gör en bokning som inloggad | Bokningsbekräftelse visas |
 | 8 | Kolla `/dashboard` → Mina bokningar | Bokningen syns |
-| 9 | Verifiera i Supabase Table Editor | `owner_id` och `user_id` är satta på nya rader |
+| 9 | Verifiera raden i Neon | Bokningen finns i tabellen `Bokning` med `anvandare_id` satt |
 | 10 | Logga ut | Navbar visar Logga in / Registrera igen |
 
 ---

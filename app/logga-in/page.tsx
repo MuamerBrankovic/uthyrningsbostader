@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/components/SessionProvider";
+import { EPOST } from "@/lib/kontakt";
 
 export default function LoggaIn() {
   const [email, setEmail] = useState("");
@@ -95,9 +96,18 @@ export default function LoggaIn() {
             />
           </div>
 
-          <div className="text-right mb-6">
-            <a href="#" className="text-xs text-[#2D7A4F] hover:underline">Glömt lösenord?</a>
-          </div>
+          {/* Det finns ingen sjalvbetjanad losenordsaterstallning annu. En lank
+              till "#" ser ut som en funktion men gor ingenting — vi pekar pa
+              den vag som faktiskt fungerar tills flodet finns. */}
+          <p className="text-right text-xs text-gray-400 mb-6">
+            Glömt lösenordet?{" "}
+            <a
+              href={`mailto:${EPOST}?subject=Gl%C3%B6mt%20l%C3%B6senord`}
+              className="text-[#2D7A4F] hover:underline"
+            >
+              Kontakta oss
+            </a>
+          </p>
 
           {fel && (
             <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-xl mb-4">

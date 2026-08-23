@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import OffertKnapp from "@/app/components/OffertKnapp";
-import { TELEFON_VISNING, TELEFON_LANK, ORGNR_VISNING } from "@/lib/kontakt";
+import { TELEFON_VISNING, TELEFON_LANK, ORGNR_VISNING, EPOST } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
   title: "ReLoka — Företagsbostäder i Linköping",
@@ -221,10 +221,10 @@ export default function Home() {
               {TELEFON_VISNING}
             </a>
             <a
-              href="mailto:info@reloka.se"
+              href={`mailto:${EPOST}`}
               className="inline-block border border-white/40 text-white text-sm font-medium px-8 py-3.5 rounded-full hover:bg-white/10 transition-colors"
             >
-              info@reloka.se
+              {EPOST}
             </a>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function Home() {
                 <span className="text-white font-medium mb-1 text-xs uppercase tracking-wider">Företaget</span>
                 <Link href="/om-oss" className="hover:text-white transition-colors">Om oss</Link>
                 <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
-                <a href="mailto:info@reloka.se" className="hover:text-white transition-colors">Kontakt</a>
+                <a href={`mailto:${EPOST}`} className="hover:text-white transition-colors">Kontakt</a>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-white font-medium mb-1 text-xs uppercase tracking-wider">Juridiskt</span>
@@ -267,7 +267,7 @@ export default function Home() {
           </div>
           <div className="border-t border-gray-800 pt-6 text-xs text-gray-600 flex flex-col sm:flex-row justify-between gap-2">
             <span>© 2026 ReLoka AB. Alla rättigheter förbehållna.</span>
-            <a href="mailto:info@reloka.se" className="hover:text-gray-400 transition-colors">info@reloka.se</a>
+            <a href={`mailto:${EPOST}`} className="hover:text-gray-400 transition-colors">{EPOST}</a>
           </div>
         </div>
       </footer>

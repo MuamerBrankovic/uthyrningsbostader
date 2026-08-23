@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EPOST } from "@/lib/kontakt";
 
 export const metadata: Metadata = {
   title: "Användarvillkor",
@@ -87,8 +88,8 @@ export default function Villkor() {
           <h2 className={H2_CLS}>Kontakt</h2>
           <p className={P_CLS}>
             ReLoka AB, Linköping ·{" "}
-            <a href="mailto:info@reloka.se" className="text-[#2D7A4F] hover:underline">
-              info@reloka.se
+            <a href={`mailto:${EPOST}`} className="text-[#2D7A4F] hover:underline">
+              {EPOST}
             </a>
           </p>
 

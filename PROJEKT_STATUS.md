@@ -1,37 +1,43 @@
 # UthyrningsBostäder — Projektstatus
 
 ## Senast uppdaterad
-2026-04-11
+2026-08-23
 
 ## Tech Stack
-- Next.js (React) — frontend
-- Supabase — databas & auth
+- Next.js 16 (App Router) — frontend och API-rutter
+- Prisma 7 mot Neon Postgres — databas
+- Egen JWT-auth (jose + bcryptjs) i HTTP-only cookie
 - Tailwind CSS — styling
-- Hosted lokalt på: http://localhost:3000
+- Resend — mejl · Vercel Blob — filer · Sentry — felövervakning
+- Live på https://reloka.se (Vercel), lokalt på http://localhost:3000
 
 ## Färdiga sidor
 - / — Startsida (app/page.tsx)
 - /bostader — Bostadslista med filter (app/bostader/page.tsx)
-- /bostad/[id] — Detaljsida med bokning (app/bostad/[id]/page.tsx)
-- /logga-in — Inloggning med Supabase auth (app/logga-in/page.tsx)
-- /registrera — Registrering med Supabase auth (app/registrera/page.tsx)
-- /dashboard — Dashboard för bokningar & lägg upp bostad (app/dashboard/page.tsx)
+- /bostad/[id] — Detaljsida (app/bostad/[id]/page.tsx)
+- /rum/[id] — Rumssida med bokning (app/rum/[id]/)
+- /offert — Offertformulär · /hyresvardar — Registrera bostad
+- /om-oss · /faq · /integritetspolicy · /villkor
+- /logga-in · /registrera — egen auth (app/logga-in/, app/registrera/)
+- /dashboard — Dashboard, admin-flikar visas bara för rollen "admin"
 
-## Databas (Supabase)
-- Tabell: bostader (id, city, type, price, size, tag, beskrivning, facilities)
-- Tabell: bokningar (id, bostad_id, namn, email, inflyttning, utflyttning)
-- Auth: Supabase inbyggd auth med email/lösenord
+## Databas
+Schemat är sanningen: se `prisma/schema.prisma`. Modeller: Bostad, Rum,
+Bokning, Anvandare, Offertforfragan, Hyresvardsanmalan. Migrationer ligger i
+`prisma/migrations/` och läggs på med `npx prisma migrate deploy`.
 
-## Nästa steg att bygga
-1. Navbar — visa Dashboard/Logga ut när inloggad
-2. Sökfältet på startsidan — koppla till /bostader
-3. Publicering — lägga ut hemsidan live på Vercel
+Auth är egen sedan Dag 3 — inloggning sker mot tabellen `Anvandare`
+(bcrypt-hashat lösenord) och sessionen är en JWT i en HTTP-only cookie.
+Se `lib/auth.ts`.
 
 ## Starta projektet
 1. Öppna VS Code
 2. Öppna terminal (Ctrl + ö)
 3. Skriv: npm run dev
 4. Gå till: http://localhost:3000
+
+> Historiken nedan är en daterad dagbok. Den beskriver vad som gjordes när,
+> inte hur systemet ser ut idag — äldre poster skrivs därför aldrig om.
 
 
 ## Dag 2

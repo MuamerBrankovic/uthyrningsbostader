@@ -1,6 +1,11 @@
 // ─── Central kontakt- och företagsinfo ───────────────────────────────────────
 // Uppdatera VÄRDENA här — de används överallt på sajten via import.
-// Inget telefonnummer/org.nr ska hårdkodas någon annanstans.
+// Inget telefonnummer, org.nr eller e-postadress ska hårdkodas någon
+// annanstans.
+
+// Bemannad inkorg. Används både som synlig text och i mailto:-länkar, så den
+// står utan "mailto:"-prefix — det läggs på vid användning.
+export const EPOST = "info@reloka.se";
 
 // Visningsformat (svenskt), t.ex. "013-123 45 67"
 export const TELEFON_VISNING = "076-058 65 25";

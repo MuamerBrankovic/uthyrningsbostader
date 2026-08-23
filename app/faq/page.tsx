@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { EPOST } from "@/lib/kontakt";
 
 const sektioner = [
   {
@@ -109,8 +110,8 @@ export default function Faq() {
           <h1 className="text-4xl font-bold text-[#1a1a1a] mt-3 mb-4">Vanliga frågor</h1>
           <p className="text-gray-500 text-sm">
             Hittar du inte svaret du söker? Kontakta oss direkt på{" "}
-            <a href="mailto:info@reloka.se" className="text-[#2D7A4F] hover:underline">
-              info@reloka.se
+            <a href={`mailto:${EPOST}`} className="text-[#2D7A4F] hover:underline">
+              {EPOST}
             </a>
             .
           </p>

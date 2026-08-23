@@ -360,7 +360,7 @@ function LaggUppBostad() {
     <div className="bg-white rounded-2xl border border-gray-100 p-8">
       <h2 className="font-semibold text-[#1a1a1a] mb-1">Lägg upp en ny bostad</h2>
       <p className="text-sm text-gray-400 mb-6">
-        Skapa bostaden här, lägg sedan till rum under fliken "Lägg upp rum".
+        Skapa bostaden här, lägg sedan till rum under fliken &rdquo;Lägg upp rum&rdquo;.
       </p>
 
       {sparad && (

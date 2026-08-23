@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { formateraDatum } from "@/lib/datum";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
+import { EPOST } from "@/lib/kontakt";
 
 const GRON = "#2D7A4F";
 const MORK = "#1a1a1a";
@@ -100,7 +101,7 @@ function wrapper(innehall: string): string {
         </div>
         <div style="background:${LJUS};padding:20px 32px;font-size:12px;color:#6b7280;border-top:1px solid #f0f0f0;">
           ReLoka AB · Linköping, Sverige<br/>
-          <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+          <a href="mailto:${EPOST}" style="color:${GRON};text-decoration:none;">${EPOST}</a>
         </div>
       </div>
     </div>
@@ -131,7 +132,7 @@ function visa(s: string | null | undefined): string {
   return s && String(s).trim() ? String(s) : "—";
 }
 
-const TEXT_FOT = "\nReLoka AB · Linköping, Sverige\ninfo@reloka.se";
+const TEXT_FOT = `\nReLoka AB · Linköping, Sverige\n${EPOST}`;
 
 // ─── Bekräftelsemail: bokning ───────────────────────────────────────────────
 
@@ -176,7 +177,7 @@ export async function skickaBokningsmail(
 
     <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Frågor? Kontakta oss direkt:</p>
     <p style="margin:0;font-size:14px;">
-      <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+      <a href="mailto:${EPOST}" style="color:${GRON};text-decoration:none;">${EPOST}</a>
     </p>
   `);
 
@@ -219,7 +220,7 @@ export async function skickaBokningsmail(
     `Startdatum: ${startdatum}`,
     `Avtalstyp: ${avtalstypLabel(bokning.avtalstyp)}`,
     "",
-    "Frågor? Kontakta oss direkt: info@reloka.se",
+    `Frågor? Kontakta oss direkt: ${EPOST}`,
     TEXT_FOT,
   ].join("\n");
 
@@ -362,7 +363,7 @@ export async function skickaBokningsstatusMail(
 
       <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Frågor? Kontakta oss direkt:</p>
       <p style="margin:0;font-size:14px;">
-        <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+        <a href="mailto:${EPOST}" style="color:${GRON};text-decoration:none;">${EPOST}</a>
       </p>
     `);
     text = [
@@ -379,7 +380,7 @@ export async function skickaBokningsstatusMail(
       `Slutdatum: ${slutdatum}`,
       `Avtalstyp: ${avtalstypLabel(bokning.avtalstyp)}`,
       "",
-      "Frågor? Kontakta oss direkt: info@reloka.se",
+      `Frågor? Kontakta oss direkt: ${EPOST}`,
       TEXT_FOT,
     ].join("\n");
   } else {
@@ -400,7 +401,7 @@ export async function skickaBokningsstatusMail(
 
       <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Kontakta oss direkt:</p>
       <p style="margin:0;font-size:14px;">
-        <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+        <a href="mailto:${EPOST}" style="color:${GRON};text-decoration:none;">${EPOST}</a>
       </p>
     `);
     text = [
@@ -410,7 +411,7 @@ export async function skickaBokningsstatusMail(
       "",
       "Ni är varmt välkomna att höra av er igen — vi hjälper gärna till att hitta ett annat boende eller ett annat datum som passar.",
       "",
-      "Kontakta oss direkt: info@reloka.se",
+      `Kontakta oss direkt: ${EPOST}`,
       TEXT_FOT,
     ].join("\n");
   }
@@ -578,7 +579,7 @@ export async function skickaOffertmail(
 
     <p style="margin:0 0 8px;font-size:14px;color:${MORK};">Brådskande? Kontakta oss direkt:</p>
     <p style="margin:0;font-size:14px;">
-      <a href="mailto:info@reloka.se" style="color:${GRON};text-decoration:none;">info@reloka.se</a>
+      <a href="mailto:${EPOST}" style="color:${GRON};text-decoration:none;">${EPOST}</a>
     </p>
   `);
 
@@ -618,7 +619,7 @@ export async function skickaOffertmail(
     `Önskad inflyttning: ${inflyttning ?? "—"}`,
     `Bostadstyp: ${bostadstypLabel(offert.bostadstyp)}`,
     "",
-    "Brådskande? Kontakta oss direkt: info@reloka.se",
+    `Brådskande? Kontakta oss direkt: ${EPOST}`,
     TEXT_FOT,
   ].join("\n");
 
