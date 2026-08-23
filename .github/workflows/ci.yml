@@ -1,0 +1,91 @@
+name: CI
+
+# Körs vid varje push och varje pull request.
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  kontroll:
+    runs-on: ubuntu-latest
+
+    # API-testsviten pratar med en riktig databas: den skapar egen testdata
+    # ([TEST]-märkta rader) och raderar den efteråt. Därför startas en egen
+    # Postgres här. Den är helt skild från Neon-databasen i produktion —
+    # ingen CI-körning kan röra riktiga bokningar.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: reloka_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/reloka_test
+      # Engångsvärde för den här körningen. Dev-servern har visserligen en
+      # fallback i utvecklingsläge, men sätts den explicit kan testerna inte
+      # råka bero på fallbacken.
+      JWT_SECRET: endast-for-ci-korning
+      # RESEND_API_KEY, BLOB_READ_WRITE_TOKEN och SENTRY_DSN lämnas medvetet
+      # osatta: koden hoppar då över mejlutskick, blob-lagring och
+      # felrapportering, så CI varken skickar mejl eller bränner kvot.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # "lts/*" följer senaste Node LTS automatiskt. Byt till ett fast
+          # nummer (t.ex. 24) om en framtida LTS-version bryter bygget.
+          node-version: lts/*
+          cache: npm
+
+      - name: Installera beroenden
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Genererar Prisma-klienten, som både dev-servern och testsviten
+      # importerar. Steget läser bara schemat och ansluter aldrig till
+      # databasen — det är därför "npm run build" fungerar utan databas.
+      - name: Generera Prisma-klienten
+        run: npx prisma generate
+
+      - name: Lägg upp databasschemat
+        run: npx prisma migrate deploy
+
+      # Testsviten anropar ett riktigt HTTP-API och behöver därför en
+      # igångvarande server, precis som lokalt (se tests/api.test.js).
+      - name: Starta dev-servern
+        run: |
+          nohup npm run dev > dev-server.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000/api/auth/session; then
+              echo "Dev-servern svarar."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Dev-servern svarade inte inom 120 sekunder. Serverlogg:"
+          cat dev-server.log
+          exit 1
+
+      - name: API-tester
+        run: npm run test:api
+
+      - name: Serverlogg vid fel
+        if: failure()
+        run: cat dev-server.log || true
+
+      - name: Bygg
+        run: npm run build
