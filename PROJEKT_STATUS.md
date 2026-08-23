@@ -30,19 +30,14 @@ Auth är egen sedan Dag 3 — inloggning sker mot tabellen `Anvandare`
 (bcrypt-hashat lösenord) och sessionen är en JWT i en HTTP-only cookie.
 Se `lib/auth.ts`.
 
-> Historiken nedan är en daterad dagbok. Den beskriver vad som gjordes när,
-> inte hur systemet ser ut idag — äldre poster skrivs därför aldrig om.
-
-## Nästa steg att bygga
-1. Navbar — visa Dashboard/Logga ut när inloggad
-2. Sökfältet på startsidan — koppla till /bostader
-3. Publicering — lägga ut hemsidan live på Vercel
-
 ## Starta projektet
 1. Öppna VS Code
 2. Öppna terminal (Ctrl + ö)
 3. Skriv: npm run dev
 4. Gå till: http://localhost:3000
+
+> Historiken nedan är en daterad dagbok. Den beskriver vad som gjordes när,
+> inte hur systemet ser ut idag — äldre poster skrivs därför aldrig om.
 
 
 ## Dag 2
