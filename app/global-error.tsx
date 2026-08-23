@@ -44,8 +44,10 @@ export default function GlobalError({
               >
                 Försök igen
               </button>
-              {/* Ingen next/link här: rot-layouten är trasig, så en vanlig
-                  omladdning är mer pålitlig än klientnavigering. */}
+              {/* Ingen next/link här: rot-layouten är trasig, så vi kan inte
+                  lita på att routern är intakt. En full omladdning är mer
+                  pålitlig än klientnavigering just i det här läget. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 className="bg-white border border-gray-200 text-[#2D7A4F] text-sm px-7 py-3 rounded-full hover:border-[#2D7A4F] transition-colors font-medium"

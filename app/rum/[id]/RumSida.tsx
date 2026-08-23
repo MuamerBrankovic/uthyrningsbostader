@@ -61,6 +61,18 @@ function getForstaLedigaDatum(bokningar: Bokning[]): string {
   return latest.toISOString().split("T")[0];
 }
 
+// Ett rum som är bokat tills vidare får ett första lediga datum tio år fram
+// (se getForstaLedigaDatum). Ligger datumet längre bort än så här behandlar vi
+// rummet som obokningsbart i stället för att visa ett datum ingen kan använda.
+const BOKNINGSHORISONT_MS = 365 * 24 * 60 * 60 * 1000 * 5;
+
+// Ligger som fristående funktion, inte inne i komponenten: Date.now() är
+// opure och får inte anropas under render (react-hooks/purity).
+function arInomBokningsbarHorisont(datum: string): boolean {
+  const grans = new Date(Date.now() + BOKNINGSHORISONT_MS);
+  return datum < grans.toISOString().split("T")[0];
+}
+
 function getRumStatusLabel(bokningar: Bokning[]): { label: string; color: string } {
   const active = bokningar.filter((b) => {
     if (b.status === BOKNING_STATUS.AVBOKAD) return false;
@@ -424,8 +436,7 @@ export default function RumSida({ rumId }: { rumId: string }) {
       : "bg-red-50 text-red-700";
 
   const kanBokas =
-    statusInfo.color !== "gray" ||
-    minDatum < new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 5).toISOString().split("T")[0];
+    statusInfo.color !== "gray" || arInomBokningsbarHorisont(minDatum);
 
   return (
     <>
