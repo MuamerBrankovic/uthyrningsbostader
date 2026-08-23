@@ -6,14 +6,20 @@
 import "./globals.css";
 import { useEffect } from "react";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
+import { skapaForsokIgen } from "@/lib/felgrans";
 
 export default function GlobalError({
   error,
   unstable_retry,
+  reset,
 }: {
   error: Error & { digest?: string };
-  unstable_retry: () => void;
+  // Båda är valfria med flit — se lib/felgrans.ts för varför.
+  unstable_retry?: () => void;
+  reset?: () => void;
 }) {
+  const forsokIgen = skapaForsokIgen(unstable_retry, reset);
+
   useEffect(() => {
     console.error(error);
     // Ett fel som tar sig ända hit har slagit ut rot-layouten. Felgränsen
@@ -50,7 +56,7 @@ export default function GlobalError({
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => unstable_retry()}
+                onClick={forsokIgen}
                 className="bg-[#2D7A4F] text-white text-sm px-7 py-3 rounded-full hover:bg-[#225f3d] transition-colors font-medium"
               >
                 Försök igen

@@ -3,19 +3,22 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
+import { skapaForsokIgen } from "@/lib/felgrans";
 
 // Fångar oväntade fel i sidor och layouter under rot-layouten. Kraschar
 // rot-layouten själv tar app/global-error.tsx över i stället.
 export default function Error({
   error,
   unstable_retry,
+  reset,
 }: {
   error: Error & { digest?: string };
-  // Next 16 döpte om reset() till unstable_retry(). Skillnaden är att retry
-  // hämtar om innehållet från servern, inte bara återställer felgränsen —
-  // det är det man vill när felet berodde på ett misslyckat anrop.
-  unstable_retry: () => void;
+  // Båda är valfria med flit — se lib/felgrans.ts för varför.
+  unstable_retry?: () => void;
+  reset?: () => void;
 }) {
+  const forsokIgen = skapaForsokIgen(unstable_retry, reset);
+
   useEffect(() => {
     console.error(error);
     // Utan det här anropet syns felet ingenstans: Next.js felgräns fångar
@@ -46,7 +49,7 @@ export default function Error({
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => unstable_retry()}
+            onClick={forsokIgen}
             className="bg-[#2D7A4F] text-white text-sm px-7 py-3 rounded-full hover:bg-[#225f3d] transition-colors font-medium"
           >
             Försök igen
