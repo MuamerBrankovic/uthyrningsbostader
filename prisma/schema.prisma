@@ -16,6 +16,8 @@ model Bostad {
   delade_utrymmen      String[]
   inkluderat           String[]
   narmaste_hallplats   String?
+  // Reserv för bostäder utan rum. Typen sätts numera per rum (Rum.bostadstyp)
+  // och /bostader filtrerar via rummen — se lib/bostadstyp.ts.
   bostadstyp           String   @default("privat_rum")
   kontaktperson_namn   String?
   kontaktperson_bild   String?
@@ -53,7 +55,17 @@ model Rum {
   kvm         Int?
   manadshyra  Int
   moblering   String[]
+  // Samma värden som Bostad.bostadstyp (lib/bostadstyp.ts). Ligger per rum
+  // eftersom ett hus kan ha både rum som delar badrum och rum med eget bad.
+  // Prisma kan inte läsa TypeScript — ändras defaulten i lib/bostadstyp.ts
+  // måste den ändras här med en migration samtidigt.
+  bostadstyp  String     @default("privat_rum")
+  // Del av huset, fritext ("Övre våningen"). Bostadssidan grupperar rummen
+  // per sektion, i den ordning sektionerna först dyker upp.
+  sektion     String?
   bokningar   Bokning[]
+  // Rummen visas i skapandeordning (orderBy created_at) — det är den enda
+  // sorteringen som finns, så ordningen bestäms när rummen läggs upp.
   created_at  DateTime   @default(now())
 
   // Rum laddas alltid per bostad (bostadslista + bostadssida include rum).
