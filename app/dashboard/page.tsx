@@ -7,6 +7,12 @@ import { useSession, type Session } from "@/app/components/SessionProvider";
 import AllaBokningar from "./AllaBokningar";
 import type { RumInfo } from "./typer";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import {
+  BOSTADSTYPER,
+  STANDARD_BOSTADSTYP,
+  arBostadstyp,
+  bostadstypEtikett,
+} from "@/lib/bostadstyp";
 
 type Bokning = {
   id: string;
@@ -26,6 +32,8 @@ type BostadOption = {
   namn: string;
   stadsdel: string | null;
   adress: string | null;
+  bostadstyp: string;
+  rum: { sektion: string | null }[];
 };
 
 type Flik =
@@ -522,6 +530,8 @@ function LaggUppRum() {
   const [hamtarBostader, setHamtarBostader] = useState(true);
   const [bostadId, setBostadId] = useState("");
   const [namn, setNamn] = useState("");
+  const [sektion, setSektion] = useState("");
+  const [rumstyp, setRumstyp] = useState<string>(STANDARD_BOSTADSTYP);
   const [beskrivning, setBeskrivning] = useState("");
   const [kvm, setKvm] = useState("");
   const [manadshyra, setManadshyra] = useState("");
@@ -552,6 +562,8 @@ function LaggUppRum() {
       body: JSON.stringify({
         bostad_id: bostadId,
         namn,
+        sektion: sektion || null,
+        bostadstyp: rumstyp,
         beskrivning: beskrivning || null,
         kvm: kvm ? Number(kvm) : null,
         manadshyra: Number(manadshyra),
@@ -562,6 +574,14 @@ function LaggUppRum() {
 
     if (res.ok) {
       setSparad(true);
+      // Sektion och rumstyp ligger kvar — nästa rum är ofta på samma våning.
+      // Den nya sektionen läggs till i förslagslistan direkt.
+      const nySektion = sektion.trim();
+      if (nySektion) {
+        setBostader((prev) =>
+          prev.map((b) => (b.id === bostadId ? { ...b, rum: [...b.rum, { sektion: nySektion }] } : b))
+        );
+      }
       setNamn("");
       setBeskrivning("");
       setKvm("");
@@ -577,6 +597,24 @@ function LaggUppRum() {
   }
 
   const valdBostad = bostader.find((b) => b.id === bostadId);
+
+  // Förslag i "Del av huset" — rummen grupperas på exakt text, så en
+  // stavningsvariant ("Övre Våningen") skulle bli en egen rubrik
+  const befintligaSektioner = [
+    ...new Set(
+      (valdBostad?.rum ?? [])
+        .map((r) => r.sektion?.trim())
+        .filter((s): s is string => !!s)
+    ),
+  ];
+
+  function valjBostad(id: string) {
+    setBostadId(id);
+    setSektion("");
+    // Förval: bostadens egen typ. Ändras per rum när huset blandar typer.
+    const bostad = bostader.find((b) => b.id === id);
+    setRumstyp(bostad && arBostadstyp(bostad.bostadstyp) ? bostad.bostadstyp : STANDARD_BOSTADSTYP);
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -621,7 +659,7 @@ function LaggUppRum() {
           <select
             id="rum-bostad"
             value={bostadId}
-            onChange={(e) => setBostadId(e.target.value)}
+            onChange={(e) => valjBostad(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
           >
             <option value="">— Välj bostad —</option>
@@ -650,6 +688,41 @@ function LaggUppRum() {
             onChange={(e) => setNamn(e.target.value)}
             className={INPUT_CLS}
           />
+        </div>
+        <div>
+          <label htmlFor="rum-sektion" className={LABEL_CLS}>Del av huset</label>
+          <input
+            id="rum-sektion"
+            type="text"
+            list="rum-sektioner"
+            placeholder="t.ex. Övre våningen"
+            value={sektion}
+            onChange={(e) => setSektion(e.target.value)}
+            className={INPUT_CLS}
+          />
+          <datalist id="rum-sektioner">
+            {befintligaSektioner.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+          <p className="text-xs text-gray-400 mt-1.5">
+            Rum med samma text visas under en gemensam rubrik på bostadssidan.
+          </p>
+        </div>
+        <div>
+          <label htmlFor="rum-typ" className={LABEL_CLS}>Rumstyp</label>
+          <select
+            id="rum-typ"
+            value={rumstyp}
+            onChange={(e) => setRumstyp(e.target.value)}
+            className={INPUT_CLS}
+          >
+            {BOSTADSTYPER.map((t) => (
+              <option key={t} value={t}>
+                {bostadstypEtikett(t)}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label htmlFor="rum-kvm" className={LABEL_CLS}>Storlek (kvm)</label>
