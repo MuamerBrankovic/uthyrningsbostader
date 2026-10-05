@@ -16,6 +16,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { bostadstypEtikett, bostadensTyper, rumstypEtikett } from "@/lib/bostadstyp";
 
 // ─── Typer ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,8 @@ type Rum = {
   bilder: string[];
   kvm: number | null;
   manadshyra: number;
+  bostadstyp: string;
+  sektion: string | null;
   bokningar: Bokning[];
 };
 
@@ -139,16 +142,31 @@ function formateraInkluderat(text: string): string {
 // ─── Bostadstyp-badge ──────────────────────────────────────────────────────────
 
 function BostadstypBadge({ typ }: { typ: string }) {
-  const labels: Record<string, string> = {
-    privat_rum: "Privat rum",
-    rum_eget_bad: "Rum med eget bad",
-    hel_lagenhet: "Hel lägenhet",
-  };
   return (
     <span className="text-xs font-medium bg-[#e8f5ee] text-[#2D7A4F] px-2.5 py-1 rounded-full shrink-0">
-      {labels[typ] ?? typ}
+      {bostadstypEtikett(typ)}
     </span>
   );
+}
+
+// ─── Gruppering per del av huset ──────────────────────────────────────────────
+
+type RumGrupp = { sektion: string | null; rum: Rum[] };
+
+// Rummen kommer i skapandeordning från API:t. Sektionerna visas i den ordning
+// de först dyker upp, så "Övre våningen" hamnar först om dess rum skapades först.
+function grupperaPerSektion(rum: Rum[]): RumGrupp[] {
+  const grupper: RumGrupp[] = [];
+  for (const r of rum) {
+    const sektion = r.sektion?.trim() || null;
+    let grupp = grupper.find((g) => g.sektion === sektion);
+    if (!grupp) {
+      grupp = { sektion, rum: [] };
+      grupper.push(grupp);
+    }
+    grupp.rum.push(r);
+  }
+  return grupper;
 }
 
 // ─── Fastighetskort (sticky infopanel) ─────────────────────────────────────────
@@ -167,9 +185,12 @@ function Fastighetskort({ bostad, onSeRum }: { bostad: Bostad; onSeRum: () => vo
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:sticky lg:top-24">
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h2 className="text-xl font-bold text-[#1a1a1a]">{bostad.namn}</h2>
-        <BostadstypBadge typ={bostad.bostadstyp} />
+      <h2 className="text-xl font-bold text-[#1a1a1a]">{bostad.namn}</h2>
+      {/* Alla typer som finns bland rummen — ett hus kan ha flera */}
+      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+        {bostadensTyper(bostad).map((t) => (
+          <BostadstypBadge key={t} typ={t} />
+        ))}
       </div>
       {(bostad.stadsdel || bostad.adress) && (
         <p className="text-sm text-gray-400 mb-5">
@@ -394,7 +415,12 @@ function RumKort({ rum }: { rum: Rum }) {
                 från {rum.manadshyra.toLocaleString()} kr/mån
               </span>
             </div>
-            <StatusBadge status={status} />
+            <div className="flex flex-wrap items-center gap-1.5">
+              <StatusBadge status={status} />
+              <span className="inline-block text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full whitespace-nowrap">
+                {rumstypEtikett(rum.bostadstyp)}
+              </span>
+            </div>
           </div>
         </Link>
       </div>
@@ -609,9 +635,25 @@ export default function BostadSida({ params }: { params: Promise<{ id: string }>
               <p className="text-gray-400">Inga rum tillagda ännu.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {bostad.rum.map((rum) => (
-                <RumKort key={rum.id} rum={rum} />
+            <div className="space-y-10">
+              {grupperaPerSektion(bostad.rum).map((grupp, _, grupper) => (
+                <section key={grupp.sektion ?? "utan-sektion"}>
+                  {/* Rum utan sektion visas utan rubrik, som förut — utom när
+                      andra rum har en sektion, annars ser de ut att höra dit */}
+                  {(grupp.sektion || grupper.length > 1) && (
+                    <h3 className="text-lg font-semibold text-[#1a1a1a] mb-4">
+                      {grupp.sektion ?? "Övriga rum"}
+                      <span className="ml-2 text-sm font-normal text-gray-400">
+                        {grupp.rum.length} rum
+                      </span>
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {grupp.rum.map((rum) => (
+                      <RumKort key={rum.id} rum={rum} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}

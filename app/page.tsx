@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import OffertKnapp from "@/app/components/OffertKnapp";
 import { TELEFON_VISNING, TELEFON_LANK, ORGNR_VISNING, EPOST } from "@/lib/kontakt";
+import { prisma } from "@/lib/prisma";
+import { arBostadstyp, type Bostadstyp } from "@/lib/bostadstyp";
 
 export const metadata: Metadata = {
   title: "ReLoka — Företagsbostäder i Linköping",
@@ -9,7 +12,43 @@ export const metadata: Metadata = {
     "Möblerade bostäder för konsulter och tjänsteresenärer i Linköping. Flexibla avtal, fullt möblerat, ingen mäklare.",
 };
 
-export default function Home() {
+// "Från"-priserna räknas ur databasen. Sidan byggs statiskt och byggs om i
+// bakgrunden högst en gång i timmen, så nya rum och ändrade hyror syns utan deploy.
+export const revalidate = 3600;
+
+// Lägsta månadshyra bland rummen av varje typ. Typer utan rum saknas i svaret.
+async function lagstaHyraPerTyp(): Promise<Partial<Record<Bostadstyp, number>>> {
+  try {
+    const rader = await prisma.rum.groupBy({
+      by: ["bostadstyp"],
+      _min: { manadshyra: true },
+    });
+    const priser: Partial<Record<Bostadstyp, number>> = {};
+    for (const r of rader) {
+      if (arBostadstyp(r.bostadstyp) && r._min.manadshyra !== null) {
+        priser[r.bostadstyp] = r._min.manadshyra;
+      }
+    }
+    return priser;
+  } catch (err) {
+    // Under bygget får startsidan aldrig stoppa en deploy (samma princip som
+    // sitemap.ts) — då byggs den utan priser och får dem vid nästa ombyggnad.
+    // Vid en ombyggnad i drift kastas felet vidare, så att Next fortsätter
+    // visa den senast lyckade versionen i stället för en sida utan priser.
+    if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) throw err;
+    console.error("[startsida] Kunde inte hämta priser:", err);
+    return {};
+  }
+}
+
+// Servern formaterar annars tal med engelskt tusentalstecken ("4,900")
+function franPris(hyra: number | undefined): string | null {
+  return hyra === undefined ? null : `från ${hyra.toLocaleString("sv-SE")} kr/mån`;
+}
+
+export default async function Home() {
+  const priser = await lagstaHyraPerTyp();
+
   return (
     <main className="min-h-screen bg-[#F8F7F4] font-sans">
 
@@ -93,14 +132,14 @@ export default function Home() {
           {[
             {
               titel: "Privat rum",
-              pris: "från 9 000 kr/mån",
+              pris: franPris(priser.privat_rum),
               desc: "Eget rum i ett kollektivboende med delat kök och badrum. Perfekt för kortare uppdrag och mer social tillvaro.",
               inkl: ["Möblerat rum", "Delat kök", "Delade badrum", "WiFi inkl.", "El inkl."],
               href: "/bostader?typ=privat_rum",
             },
             {
               titel: "Rum med eget bad",
-              pris: "från 12 000 kr/mån",
+              pris: franPris(priser.rum_eget_bad),
               desc: "Eget rum med privat badrum i ett gemensamt boende. Integritet och bekvämlighet i ett.",
               inkl: ["Möblerat rum", "Privat badrum", "Delat kök", "WiFi inkl.", "El inkl."],
               href: "/bostader?typ=rum_eget_bad",
@@ -108,7 +147,7 @@ export default function Home() {
             },
             {
               titel: "Hel lägenhet",
-              pris: "från 18 000 kr/mån",
+              pris: franPris(priser.hel_lagenhet),
               desc: "Komplett möblerad lägenhet för konsulter som föredrar full integritet eller bor med familj.",
               inkl: ["Fullt möblerad", "Privat kök", "Privat badrum", "WiFi inkl.", "El inkl."],
               href: "/bostader?typ=hel_lagenhet",
@@ -124,7 +163,12 @@ export default function Home() {
                 </span>
               )}
               <h3 className="text-lg font-semibold text-[#1a1a1a]">{t.titel}</h3>
-              <p className="text-[#2D7A4F] font-bold mt-1 mb-3">{t.pris}</p>
+              {t.pris ? (
+                <p className="text-[#2D7A4F] font-bold mt-1 mb-3">{t.pris}</p>
+              ) : (
+                // Inga rum av typen just nu
+                <p className="text-gray-400 font-medium mt-1 mb-3">Pris på förfrågan</p>
+              )}
               <p className="text-sm text-gray-500 mb-5 leading-relaxed">{t.desc}</p>
               <ul className="space-y-2 text-sm text-gray-600 mb-6 flex-1">
                 {t.inkl.map((i) => (

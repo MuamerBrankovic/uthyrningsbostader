@@ -7,6 +7,7 @@ import { formateraDatum, formateraKortDatum } from "@/lib/datum";
 import { ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
 import { arGiltigtTelefonnummer, TELEFON_FELTEXT } from "@/lib/telefon";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import { rumstypEtikett } from "@/lib/bostadstyp";
 
 type Bokning = {
   id: string;
@@ -23,6 +24,8 @@ type Rum = {
   kvm: number | null;
   manadshyra: number;
   moblering: string[];
+  bostadstyp: string;
+  sektion: string | null;
   bokningar: Bokning[];
   bostad: {
     id: string;
@@ -461,7 +464,7 @@ export default function RumSida({ rumId }: { rumId: string }) {
                 <div>
                   <h1 className="text-2xl font-bold text-[#1a1a1a]">{rum.namn}</h1>
                   <p className="text-gray-400 text-sm mt-1">
-                    {rum.bostad.namn}{rum.bostad.stadsdel ? ` · ${rum.bostad.stadsdel}` : ""}
+                    {[rum.bostad.namn, rum.sektion, rum.bostad.stadsdel].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <span className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full ${statusBadgeClass}`}>
@@ -478,6 +481,9 @@ export default function RumSida({ rumId }: { rumId: string }) {
                 )}
                 <span className="text-xs font-semibold bg-[#e8f5ee] text-[#2D7A4F] px-3 py-1.5 rounded-full">
                   {rum.manadshyra.toLocaleString()} kr/mån
+                </span>
+                <span className="text-xs font-medium bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-full">
+                  {rumstypEtikett(rum.bostadstyp)}
                 </span>
               </div>
 

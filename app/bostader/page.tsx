@@ -6,23 +6,28 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BedDouble } from "lucide-react";
 import BildPlatshallare from "@/app/components/BildPlatshallare";
 import { EPOST } from "@/lib/kontakt";
+import {
+  BOSTADSTYPER,
+  bostadstypEtikett,
+  bostadensTyper,
+  matcharBostadstyp,
+} from "@/lib/bostadstyp";
 
 // Slutvärdet på hyresreglaget. Används på fyra ställen (startvärde, URL-synk,
 // reglagets max och nollställningen) — de måste vara samma tal, annars går
 // filtret inte att nollställa helt.
 const MAX_HYRA = 30000;
 
-const BOSTADSTYPER: { label: string; value: string }[] = [
+const TYPFILTER: { label: string; value: string }[] = [
   { label: "Alla typer", value: "" },
-  { label: "Privat rum", value: "privat_rum" },
-  { label: "Rum med eget bad", value: "rum_eget_bad" },
-  { label: "Hel lägenhet", value: "hel_lagenhet" },
+  ...BOSTADSTYPER.map((t) => ({ label: bostadstypEtikett(t), value: t })),
 ];
 
 type Rum = {
   id: string;
   manadshyra: number;
   bilder: string[];
+  bostadstyp: string;
   bokningar: { slutdatum: string | null }[];
 };
 
@@ -45,14 +50,9 @@ type Bostad = {
 };
 
 function BostadsTypBadge({ typ }: { typ: string }) {
-  const labels: Record<string, string> = {
-    privat_rum: "Privat rum",
-    rum_eget_bad: "Rum med eget bad",
-    hel_lagenhet: "Hel lägenhet",
-  };
   return (
     <span className="text-xs bg-[#e8f5ee] text-[#2D7A4F] px-2.5 py-0.5 rounded-full font-medium">
-      {labels[typ] ?? typ}
+      {bostadstypEtikett(typ)}
     </span>
   );
 }
@@ -137,7 +137,9 @@ function BostaderContent() {
   }, [bostadstyp, maxPris]);
 
   const filtrerade = bostader.filter((b) => {
-    const matchTyp = !bostadstyp || b.bostadstyp === bostadstyp;
+    // Typen ligger per rum: ett hus med både delade och egna badrum ska
+    // synas under båda filtren
+    const matchTyp = !bostadstyp || matcharBostadstyp(b, bostadstyp);
     const priser = b.rum.map((r) => r.manadshyra);
     const minPris = priser.length > 0 ? Math.min(...priser) : 0;
     const matchPris = priser.length === 0 || minPris <= maxPris;
@@ -179,7 +181,7 @@ function BostaderContent() {
                   Bostadstyp
                 </label>
                 <div className="flex gap-2 flex-wrap">
-                  {BOSTADSTYPER.map((t) => (
+                  {TYPFILTER.map((t) => (
                     <button
                       key={t.value}
                       onClick={() => setBostadstyp(t.value)}
@@ -262,11 +264,14 @@ function BostaderContent() {
                     )}
                   </div>
                   <div className="p-5">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-semibold text-[#1a1a1a] leading-snug">{b.namn}</h3>
-                      <BostadsTypBadge typ={b.bostadstyp} />
+                    <h3 className="font-semibold text-[#1a1a1a] leading-snug">{b.namn}</h3>
+                    {/* Alla typer som finns bland rummen — ett hus kan ha flera */}
+                    <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                      {bostadensTyper(b).map((t) => (
+                        <BostadsTypBadge key={t} typ={t} />
+                      ))}
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="text-sm text-gray-500">
                       {b.stadsdel ?? b.adress ?? ""}
                       {b.rum.length > 0 && ` · ${b.rum.length} rum`}
                     </p>

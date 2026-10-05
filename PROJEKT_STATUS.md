@@ -1,7 +1,7 @@
 # UthyrningsBostäder — Projektstatus
 
 ## Senast uppdaterad
-2026-08-23
+2026-10-05
 
 ## Tech Stack
 - Next.js 16 (App Router) — frontend och API-rutter
@@ -423,6 +423,93 @@ SMÅFIXAR:
 - Byt <<TELEFONNUMMER_HÄR>> i lib/kontakt.ts (två rader: visning + tel:-länk)
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
+
+## Dag 20
+
+### Rumstyp och del av huset per rum (inför Tjädergatan 17)
+Första riktiga bostaden är ett hus med tre sorters boende: fem rum som delar
+badrum (övre våningen), tre rum med eget badrum (nedre våningen) och en egen
+bostad i ett ombyggt garage (Gårdshuset). Typen låg tidigare på Bostad, så
+filtret "Rum med eget bad" hade antingen missat nedre våningen eller visat
+övre våningen felaktigt. Därför ligger typen nu per rum.
+
+- Rum fick `bostadstyp` (default privat_rum, samma värden som Bostad) och
+  `sektion` (fritext, t.ex. "Övre våningen"). Migrationen
+  20261004083010_rum_bostadstyp_och_sektion lägger bara till kolumner med
+  default eller NULL, så den kan köras medan den gamla koden är i drift.
+  Bostad.bostadstyp ligger kvar som reserv för bostäder utan rum.
+- NY FIL lib/bostadstyp.ts: typvärden, etiketter och reglerna. Filtret
+  matchar om bostaden ELLER något rum har typen. Typmärkena visar alla typer
+  bland rummen. Rumskorten säger Delat badrum / Eget badrum / Hel lägenhet.
+- /bostader filtrerar via rummen och kortet visar alla typer. Bostadssidan
+  grupperar rummen med en rubrik per sektion, i den ordning sektionerna först
+  dyker upp, och visar typen på varje rumskort. Rumssidan visar typ och del
+  av huset.
+- /api/bostader sorterar nu rummen på created_at, som bostadssidans API
+  redan gjorde. Rummen visas alltså i den ordning de lades upp.
+- Dashboarden "Lägg upp rum": nya fält Del av huset (föreslår sektionerna
+  som redan finns, eftersom en stavningsvariant blir en egen rubrik) och
+  Rumstyp (förvald efter bostadens typ).
+
+### Två dashboardbuggar hittade och rättade
+- Formulären skickar null för tomma fält (kvm: null, adress: null ...), men
+  valideringen godtog bara tom sträng. "Lägg upp rum" utan kvm och "Lägg upp
+  bostad" utan alla valfria fält ifyllda gav därför 400. tomBlirUndefined i
+  lib/validering.ts gör nu null till undefined.
+- Bilduppladdningen tömdes inte efter sparning, så förra rummets bilder
+  följde med nästa rum. Den monteras nu om efter varje sparning. Spara-
+  knappen är dessutom låst ("Väntar på bilder...") tills pågående
+  uppladdningar är klara. Annars kom bilder som inte hunnit klart inte med.
+
+### Bildbehandling och importskript
+- NY FIL lib/bildbehandling.ts: samma bearbetning för /api/upload och för
+  skript (EXIF-rotation, max 1920 px bredd, WebP q85).
+- NYTT SKRIPT scripts/importera-tjadergatan.mts lägger upp Tjädergatan 17
+  med 9 rum och 27 bilder. Det körs med `node` (Node 24 kör TypeScript
+  direkt). Utan `--skarpt` gör det bara en torrkörning, och okända argument
+  stoppar det, så en felstavad flagga kan aldrig ge en skarp körning.
+  tsconfig fick allowImportingTsExtensions så att bygget kan typkontrollera
+  skriptet.
+
+### Startsidan och e2e-skriptet
+- Startsidans "från"-priser var hårdkodade (9 000 / 12 000 / 18 000 kr).
+  Nu räknas de ur databasen: lägsta månadshyra bland rummen av varje typ,
+  och "Pris på förfrågan" om typen saknar rum. Sidan byggs statiskt och byggs
+  om i bakgrunden högst en gång i timmen (revalidate = 3600). Svarar inte
+  databasen under bygget byggs sidan utan priser, så deployen stoppas inte.
+- e2e-live.js hade testkontots lösenord i klartext i det publika repot. Det
+  läses nu från miljövariabeln E2E_LOSENORD. Testkontot raderas vid
+  rensningen, så det gamla lösenordet i git-historiken leder ingenstans.
+
+### Verifierat
+test:api 11/11 mot en isolerad lokal Postgres, aldrig mot Neon. De nya
+testerna faller om respektive rättning tas bort. Lint 0 fel, tsc och build
+gröna. Lokal förhandsvisning i dator- och mobilvy (Playwright), inklusive
+"Lägg upp rum" på riktigt.
+
+MIGRATIONEN ÄR BAKÅTKOMPATIBEL, bevisat lokalt: koden som ligger live
+(origin/main) kördes mot en migrerad databas. Dess egna 7 tester var gröna,
+och dess POST /api/rum gav 201 med bostadstyp 'privat_rum' och sektion NULL
+ifyllda av databasen.
+
+### ATT GÖRA, i den här ordningen (stanna efter varje punkt)
+Muamer först: PR + grön CI, Neon-branch backup-2026-10-05 (BACKUP.md,
+Skyddsnät 1) och BLOB_READ_WRITE_TOKEN i .env.local. Rensningen raderar
+bokningar via cascade och går inte att ångra utan backupen.
+1. `npx prisma migrate deploy` mot produktion (efter "kör migrationen")
+2. Radera testdatan med exakta id:n (efter "kör rensningen"): testbostaden
+   med rum och bokningar, 13 testkonton (ako.brankovic@outlook.com behålls
+   som enda admin), 7 offertförfrågningar, testbostadens 2 bilder och 2
+   kontrakts-PDF:er i Blob
+3. Kör importskriptet: först utan flagga (torrkörning), sedan med `--skarpt`
+4. Merga, så att Vercel deployar (sitemap.xml får då med Tjädergatan 17)
+5. Kontrollera reloka.se
+Därefter, i en egen PR: spärr så att testsviten inte kan köras mot
+produktionsdatabasen.
+
+OBS: Preview-deployer har samma DATABASE_URL och BLOB-token som produktion
+(DEPLOY.md). Prova aldrig saker i en previews dashboard, eftersom det skriver
+till produktionen.
 
 ## Dag 19
 

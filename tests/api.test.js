@@ -317,6 +317,15 @@ test("skräpdata ger 400 med tydligt fel, aldrig 500", async () => {
         }),
     },
     {
+      namn: "admin: rum med påhittad rumstyp",
+      gor: () =>
+        api("/api/rum", {
+          method: "POST",
+          headers: { cookie: adminCookie },
+          body: JSON.stringify({ bostad_id: bostadId, namn: "X", manadshyra: 4900, bostadstyp: "slott" }),
+        }),
+    },
+    {
       namn: "admin: bokning med påhittad status",
       gor: () =>
         api(`/api/bokningar/${crypto.randomUUID()}`, {
@@ -399,5 +408,152 @@ test("admin-endpoints nekar utan admin-session", async () => {
 
     const somHyresgast = await e.gor({ cookie: cookieA });
     assert.equal(somHyresgast.status, 403, `${e.namn} som hyresgast: förväntade 403, fick ${somHyresgast.status}`);
+  }
+});
+
+// ─── 8. Rumstyp och del av huset sparas per rum ──────────────────────────────
+
+test("admin: rum sparar bostadstyp och sektion", async () => {
+  const res = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      bostad_id: bostadId,
+      namn: "Testrum med eget bad",
+      manadshyra: 4900,
+      bostadstyp: "rum_eget_bad",
+      sektion: "Nedre våningen",
+    }),
+  });
+  assert.equal(res.status, 201);
+  const body = await res.json();
+  assert.equal(body.bostadstyp, "rum_eget_bad", "API-svaret ska visa bostadstyp");
+  assert.equal(body.sektion, "Nedre våningen", "API-svaret ska visa sektion");
+
+  const iDb = await prisma.rum.findUnique({ where: { id: body.id } });
+  assert.equal(iDb?.bostadstyp, "rum_eget_bad", "bostadstyp ska sparas i databasen");
+  assert.equal(iDb?.sektion, "Nedre våningen", "sektion ska sparas i databasen");
+
+  // Utan fälten: standardtyp och ingen sektion
+  const utan = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({ bostad_id: bostadId, namn: "Testrum utan typ", manadshyra: 4900 }),
+  });
+  assert.equal(utan.status, 201);
+  const utanBody = await utan.json();
+  assert.equal(utanBody.bostadstyp, "privat_rum");
+  assert.equal(utanBody.sektion, null);
+});
+
+// ─── 9. Tomma fält från dashboarden (null) godtas ────────────────────────────
+
+test("admin: dashboardens null för tomma fält ger 201, inte 400", async () => {
+  // Formulären i dashboarden skickar null för tomma valfria fält
+  // (t.ex. kvm: null). Det ska betyda "tomt", inte avvisas.
+  // Samma body som "Lägg upp rum" skickar när bara de obligatoriska fälten är ifyllda.
+  const rum = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      bostad_id: bostadId,
+      namn: "Testrum med tomma fält",
+      sektion: null,
+      bostadstyp: "privat_rum",
+      beskrivning: null,
+      kvm: null,
+      manadshyra: 4900,
+      bilder: [],
+      moblering: [],
+    }),
+  });
+  const rumBody = await rum.json();
+  assert.equal(rum.status, 201, `rum: förväntade 201, fick ${rum.status}: ${rumBody.error ?? ""}`);
+  assert.equal(rumBody.kvm, null);
+  assert.equal(rumBody.beskrivning, null);
+  assert.equal(rumBody.sektion, null);
+  assert.equal(rumBody.bostadstyp, "privat_rum");
+
+  // Bostaden raderas direkt — testbostäder ska synas så kort tid som möjligt
+  const bostad = await api("/api/bostader", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      namn: `[TEST] Tomma fält ${KOR}`,
+      adress: null,
+      stadsdel: null,
+      bostadstyp: "privat_rum",
+      beskrivning: null,
+      bilder: [],
+      delade_utrymmen: [],
+      inkluderat: [],
+      kontaktperson_namn: null,
+      kontaktperson_email: null,
+      kontaktperson_telefon: null,
+      kontaktperson_bild: null,
+    }),
+  });
+  const bostadBody = await bostad.json();
+  if (bostadBody.id) await prisma.bostad.delete({ where: { id: bostadBody.id } });
+  assert.equal(bostad.status, 201, `bostad: förväntade 201, fick ${bostad.status}: ${bostadBody.error ?? ""}`);
+});
+
+// ─── 10. Rummen visas i skapandeordning ──────────────────────────────────────
+
+test("rummen listas i skapandeordning på både lista och bostadssida", async () => {
+  // Raderna sparas i omvänd ordning mot created_at, och namnen går i
+  // bokstavsordning åt fel håll — så varken lagringsordningen, namnet eller
+  // id:t kan råka ge rätt svar. Bara en sortering på created_at gör det.
+  const t0 = Date.now() - 60_000;
+  const ordning = await prisma.bostad.create({
+    data: {
+      namn: `[TEST] Ordning ${KOR}`,
+      rum: {
+        create: [
+          { namn: "A tredje", manadshyra: 4900, created_at: new Date(t0 + 2000) },
+          { namn: "B andra", manadshyra: 4900, created_at: new Date(t0 + 1000) },
+          { namn: "C först", manadshyra: 4900, created_at: new Date(t0) },
+        ],
+      },
+    },
+  });
+  const forvantat = ["C först", "B andra", "A tredje"];
+
+  try {
+    const lista = await api("/api/bostader").then((r) => r.json());
+    const iListan = lista.find((b) => b.id === ordning.id);
+    assert.ok(iListan, "testbostaden ska finnas i listan");
+    assert.deepEqual(iListan.rum.map((r) => r.namn), forvantat, "/api/bostader");
+
+    const detalj = await api(`/api/bostader/${ordning.id}`).then((r) => r.json());
+    assert.deepEqual(detalj.rum.map((r) => r.namn), forvantat, "/api/bostader/[id]");
+  } finally {
+    // Raderas direkt — testbostäder ska synas så kort tid som möjligt
+    await prisma.bostad.delete({ where: { id: ordning.id } });
+  }
+});
+
+// ─── 11. Startsidans "från"-priser kommer ur databasen ───────────────────────
+
+test("startsidan visar lägsta månadshyran per rumstyp ur databasen", async () => {
+  // Facit räknas ur databasen, så testet gäller oavsett vilka rum som finns
+  const rader = await prisma.rum.groupBy({ by: ["bostadstyp"], _min: { manadshyra: true } });
+  const lagst = Object.fromEntries(rader.map((r) => [r.bostadstyp, r._min.manadshyra]));
+
+  const html = (await api("/").then((r) => r.text())).replace(/ |&nbsp;/g, " ");
+  const kort = {
+    privat_rum: "Privat rum",
+    rum_eget_bad: "Rum med eget bad",
+    hel_lagenhet: "Hel lägenhet",
+  };
+  for (const [typ, titel] of Object.entries(kort)) {
+    const forvantat = lagst[typ]
+      ? `från ${lagst[typ].toLocaleString("sv-SE").replace(/ /g, " ")} kr/mån`
+      : "Pris på förfrågan";
+    const efterTitel = html.slice(html.indexOf(`>${titel}</h3>`));
+    assert.ok(
+      efterTitel.slice(0, 300).includes(forvantat),
+      `${titel}: väntade "${forvantat}" på startsidan`
+    );
   }
 });

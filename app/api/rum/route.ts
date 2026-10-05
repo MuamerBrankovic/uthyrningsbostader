@@ -16,7 +16,9 @@ export async function POST(request: Request) {
     const valid = validera(rumSchema, json.body);
     if (!valid.ok) return valid.svar;
 
-    const { bostad_id, namn, beskrivning, bilder, kvm, manadshyra, moblering } = valid.data;
+    const {
+      bostad_id, namn, beskrivning, bilder, kvm, manadshyra, moblering, sektion, bostadstyp,
+    } = valid.data;
 
     const rum = await prisma.rum.create({
       data: {
@@ -27,6 +29,8 @@ export async function POST(request: Request) {
         kvm: kvm ?? null,
         manadshyra,
         moblering: moblering ?? [],
+        sektion: sektion ?? null,
+        bostadstyp,
       },
     });
 

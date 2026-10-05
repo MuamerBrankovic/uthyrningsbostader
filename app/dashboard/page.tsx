@@ -7,6 +7,12 @@ import { useSession, type Session } from "@/app/components/SessionProvider";
 import AllaBokningar from "./AllaBokningar";
 import type { RumInfo } from "./typer";
 import { BOKNING_STATUS } from "@/lib/bokningsstatus";
+import {
+  BOSTADSTYPER,
+  STANDARD_BOSTADSTYP,
+  arBostadstyp,
+  bostadstypEtikett,
+} from "@/lib/bostadstyp";
 
 type Bokning = {
   id: string;
@@ -26,6 +32,8 @@ type BostadOption = {
   namn: string;
   stadsdel: string | null;
   adress: string | null;
+  bostadstyp: string;
+  rum: { sektion: string | null }[];
 };
 
 type Flik =
@@ -103,9 +111,11 @@ type UploadItem = {
 
 function BildUppladdning({
   onBilderChange,
+  onUppladdningChange,
   disabled,
 }: {
   onBilderChange: (urls: string[]) => void;
+  onUppladdningChange?: (uppladdar: boolean) => void;
   disabled: boolean;
 }) {
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -158,6 +168,13 @@ function BildUppladdning({
   }
 
   const uploading = items.some((i) => i.uploading);
+
+  // Formuläret låser sin spara-knapp medan bilder laddas upp. Sparas det mitt
+  // i en uppladdning hamnar de sista bilderna annars i inget rum.
+  useEffect(() => {
+    onUppladdningChange?.(uploading);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploading]);
 
   return (
     <div>
@@ -304,12 +321,18 @@ function LaggUppBostad() {
   const [kontaktEmail, setKontaktEmail] = useState("");
   const [kontaktTelefon, setKontaktTelefon] = useState("");
   const [kontaktBildUrls, setKontaktBildUrls] = useState<string[]>([]);
+  // Byts efter varje sparning så att bilduppladdningarna börjar om tomma —
+  // annars ligger förra bostadens bilder kvar och följer med nästa
+  const [bildNyckel, setBildNyckel] = useState(0);
+  const [bilderUppladdas, setBilderUppladdas] = useState(false);
+  const [kontaktbildUppladdas, setKontaktbildUppladdas] = useState(false);
+  const uppladdar = bilderUppladdas || kontaktbildUppladdas;
   const [sparad, setSparad] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState("");
 
   async function handleSubmit() {
-    if (!namn) return;
+    if (!namn || uppladdar) return;
     setLaddar(true);
     setFel("");
 
@@ -346,6 +369,7 @@ function LaggUppBostad() {
       setKontaktEmail("");
       setKontaktTelefon("");
       setKontaktBildUrls([]);
+      setBildNyckel((n) => n + 1);
       setTimeout(() => setSparad(false), 5000);
     } else {
       const data = await res.json();
@@ -354,7 +378,7 @@ function LaggUppBostad() {
     setLaddar(false);
   }
 
-  const submitDisabled = !namn || laddar;
+  const submitDisabled = !namn || laddar || uppladdar;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -472,7 +496,9 @@ function LaggUppBostad() {
 
       <div className="mb-8">
         <BildUppladdning
+          key={`bilder-${bildNyckel}`}
           onBilderChange={setBildUrls}
+          onUppladdningChange={setBilderUppladdas}
           disabled={laddar}
         />
       </div>
@@ -500,7 +526,12 @@ function LaggUppBostad() {
         </div>
         <div>
           <label className={LABEL_CLS}>Profilbild <span className="normal-case font-normal">(valfritt)</span></label>
-          <BildUppladdning onBilderChange={setKontaktBildUrls} disabled={laddar} />
+          <BildUppladdning
+            key={`kontaktbild-${bildNyckel}`}
+            onBilderChange={setKontaktBildUrls}
+            onUppladdningChange={setKontaktbildUppladdas}
+            disabled={laddar}
+          />
         </div>
       </div>
 
@@ -509,7 +540,7 @@ function LaggUppBostad() {
         disabled={submitDisabled}
         className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
-        {laddar ? "Sparar..." : "Lägg upp bostad"}
+        {laddar ? "Sparar..." : uppladdar ? "Väntar på bilder..." : "Lägg upp bostad"}
       </button>
     </div>
   );
@@ -522,11 +553,17 @@ function LaggUppRum() {
   const [hamtarBostader, setHamtarBostader] = useState(true);
   const [bostadId, setBostadId] = useState("");
   const [namn, setNamn] = useState("");
+  const [sektion, setSektion] = useState("");
+  const [rumstyp, setRumstyp] = useState<string>(STANDARD_BOSTADSTYP);
   const [beskrivning, setBeskrivning] = useState("");
   const [kvm, setKvm] = useState("");
   const [manadshyra, setManadshyra] = useState("");
   const [moblering, setMoblering] = useState("");
   const [bildUrls, setBildUrls] = useState<string[]>([]);
+  // Byts efter varje sparning så att bilduppladdningen börjar om tom —
+  // annars följer förra rummets bilder med nästa rum
+  const [bildNyckel, setBildNyckel] = useState(0);
+  const [uppladdar, setUppladdar] = useState(false);
   const [sparad, setSparad] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState("");
@@ -542,7 +579,7 @@ function LaggUppRum() {
   }, []);
 
   async function handleSubmit() {
-    if (!bostadId || !namn || !manadshyra) return;
+    if (!bostadId || !namn || !manadshyra || uppladdar) return;
     setLaddar(true);
     setFel("");
 
@@ -552,6 +589,8 @@ function LaggUppRum() {
       body: JSON.stringify({
         bostad_id: bostadId,
         namn,
+        sektion: sektion || null,
+        bostadstyp: rumstyp,
         beskrivning: beskrivning || null,
         kvm: kvm ? Number(kvm) : null,
         manadshyra: Number(manadshyra),
@@ -562,12 +601,21 @@ function LaggUppRum() {
 
     if (res.ok) {
       setSparad(true);
+      // Sektion och rumstyp ligger kvar — nästa rum är ofta på samma våning.
+      // Den nya sektionen läggs till i förslagslistan direkt.
+      const nySektion = sektion.trim();
+      if (nySektion) {
+        setBostader((prev) =>
+          prev.map((b) => (b.id === bostadId ? { ...b, rum: [...b.rum, { sektion: nySektion }] } : b))
+        );
+      }
       setNamn("");
       setBeskrivning("");
       setKvm("");
       setManadshyra("");
       setMoblering("");
       setBildUrls([]);
+      setBildNyckel((n) => n + 1);
       setTimeout(() => setSparad(false), 5000);
     } else {
       const data = await res.json();
@@ -577,6 +625,24 @@ function LaggUppRum() {
   }
 
   const valdBostad = bostader.find((b) => b.id === bostadId);
+
+  // Förslag i "Del av huset" — rummen grupperas på exakt text, så en
+  // stavningsvariant ("Övre Våningen") skulle bli en egen rubrik
+  const befintligaSektioner = [
+    ...new Set(
+      (valdBostad?.rum ?? [])
+        .map((r) => r.sektion?.trim())
+        .filter((s): s is string => !!s)
+    ),
+  ];
+
+  function valjBostad(id: string) {
+    setBostadId(id);
+    setSektion("");
+    // Förval: bostadens egen typ. Ändras per rum när huset blandar typer.
+    const bostad = bostader.find((b) => b.id === id);
+    setRumstyp(bostad && arBostadstyp(bostad.bostadstyp) ? bostad.bostadstyp : STANDARD_BOSTADSTYP);
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -621,7 +687,7 @@ function LaggUppRum() {
           <select
             id="rum-bostad"
             value={bostadId}
-            onChange={(e) => setBostadId(e.target.value)}
+            onChange={(e) => valjBostad(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#2D7A4F] transition-colors bg-white"
           >
             <option value="">— Välj bostad —</option>
@@ -650,6 +716,41 @@ function LaggUppRum() {
             onChange={(e) => setNamn(e.target.value)}
             className={INPUT_CLS}
           />
+        </div>
+        <div>
+          <label htmlFor="rum-sektion" className={LABEL_CLS}>Del av huset</label>
+          <input
+            id="rum-sektion"
+            type="text"
+            list="rum-sektioner"
+            placeholder="t.ex. Övre våningen"
+            value={sektion}
+            onChange={(e) => setSektion(e.target.value)}
+            className={INPUT_CLS}
+          />
+          <datalist id="rum-sektioner">
+            {befintligaSektioner.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+          <p className="text-xs text-gray-400 mt-1.5">
+            Rum med samma text visas under en gemensam rubrik på bostadssidan.
+          </p>
+        </div>
+        <div>
+          <label htmlFor="rum-typ" className={LABEL_CLS}>Rumstyp</label>
+          <select
+            id="rum-typ"
+            value={rumstyp}
+            onChange={(e) => setRumstyp(e.target.value)}
+            className={INPUT_CLS}
+          >
+            {BOSTADSTYPER.map((t) => (
+              <option key={t} value={t}>
+                {bostadstypEtikett(t)}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label htmlFor="rum-kvm" className={LABEL_CLS}>Storlek (kvm)</label>
@@ -708,17 +809,19 @@ function LaggUppRum() {
 
       <div className="mb-8">
         <BildUppladdning
+          key={bildNyckel}
           onBilderChange={setBildUrls}
+          onUppladdningChange={setUppladdar}
           disabled={laddar}
         />
       </div>
 
       <button
         onClick={handleSubmit}
-        disabled={!bostadId || !namn || !manadshyra || laddar}
+        disabled={!bostadId || !namn || !manadshyra || laddar || uppladdar}
         className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
-        {laddar ? "Sparar..." : "Lägg till rum"}
+        {laddar ? "Sparar..." : uppladdar ? "Väntar på bilder..." : "Lägg till rum"}
       </button>
     </div>
   );

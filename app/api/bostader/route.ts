@@ -18,6 +18,8 @@ export async function GET() {
               orderBy: { startdatum: "desc" },
             },
           },
+          // Samma ordning som bostadssidan — rummen visas i skapandeordning
+          orderBy: { created_at: "asc" },
         },
       },
       orderBy: { created_at: "desc" },
