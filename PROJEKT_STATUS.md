@@ -471,21 +471,41 @@ filtret "Rum med eget bad" hade antingen missat nedre våningen eller visat
   tsconfig fick allowImportingTsExtensions så att bygget kan typkontrollera
   skriptet.
 
+### Startsidan och e2e-skriptet
+- Startsidans "från"-priser var hårdkodade (9 000 / 12 000 / 18 000 kr).
+  Nu räknas de ur databasen: lägsta månadshyra bland rummen av varje typ,
+  och "Pris på förfrågan" om typen saknar rum. Sidan byggs statiskt och byggs
+  om i bakgrunden högst en gång i timmen (revalidate = 3600). Svarar inte
+  databasen under bygget byggs sidan utan priser, så deployen stoppas inte.
+- e2e-live.js hade testkontots lösenord i klartext i det publika repot. Det
+  läses nu från miljövariabeln E2E_LOSENORD. Testkontot raderas vid
+  rensningen, så det gamla lösenordet i git-historiken leder ingenstans.
+
 ### Verifierat
-test:api 10/10 mot en isolerad lokal Postgres, aldrig mot Neon. De tre nya
+test:api 11/11 mot en isolerad lokal Postgres, aldrig mot Neon. De nya
 testerna faller om respektive rättning tas bort. Lint 0 fel, tsc och build
 gröna. Lokal förhandsvisning i dator- och mobilvy (Playwright), inklusive
 "Lägg upp rum" på riktigt.
 
-### ATT GÖRA, i den här ordningen
-0. Neon-branch som backup (BACKUP.md, Skyddsnät 1). Rensningen i steg 3
-   raderar bokningar via cascade och går inte att ångra på annat sätt.
-1. PR + grön CI
-2. `npx prisma migrate deploy` mot produktion (efter Muamers ok)
-3. Radera testdatan (efter Muamers ok, med exakta id:n)
-4. Kör importskriptet: först utan flagga (torrkörning), sedan med `--skarpt`
-5. Merga, så att Vercel deployar
-6. Kontrollera reloka.se
+MIGRATIONEN ÄR BAKÅTKOMPATIBEL, bevisat lokalt: koden som ligger live
+(origin/main) kördes mot en migrerad databas. Dess egna 7 tester var gröna,
+och dess POST /api/rum gav 201 med bostadstyp 'privat_rum' och sektion NULL
+ifyllda av databasen.
+
+### ATT GÖRA, i den här ordningen (stanna efter varje punkt)
+Muamer först: PR + grön CI, Neon-branch backup-2026-10-05 (BACKUP.md,
+Skyddsnät 1) och BLOB_READ_WRITE_TOKEN i .env.local. Rensningen raderar
+bokningar via cascade och går inte att ångra utan backupen.
+1. `npx prisma migrate deploy` mot produktion (efter "kör migrationen")
+2. Radera testdatan med exakta id:n (efter "kör rensningen"): testbostaden
+   med rum och bokningar, 13 testkonton (ako.brankovic@outlook.com behålls
+   som enda admin), 7 offertförfrågningar, testbostadens 2 bilder och 2
+   kontrakts-PDF:er i Blob
+3. Kör importskriptet: först utan flagga (torrkörning), sedan med `--skarpt`
+4. Merga, så att Vercel deployar (sitemap.xml får då med Tjädergatan 17)
+5. Kontrollera reloka.se
+Därefter, i en egen PR: spärr så att testsviten inte kan köras mot
+produktionsdatabasen.
 
 OBS: Preview-deployer har samma DATABASE_URL och BLOB-token som produktion
 (DEPLOY.md). Prova aldrig saker i en previews dashboard, eftersom det skriver
