@@ -5,6 +5,7 @@ import {
   KONTRAKT_STATUSAR,
   FAKTURA_STATUSAR,
 } from "@/lib/bokningsstatus";
+import { BOSTADSTYPER, STANDARD_BOSTADSTYP } from "@/lib/bostadstyp";
 
 // ─── Zod-scheman för alla skrivande endpoints ────────────────────────────────
 // Felmeddelandena visas direkt för användaren i formulären — håll dem svenska
@@ -125,7 +126,7 @@ export const bostadSchema = z.object({
   stadsdel: valfriText(100),
   bostadstyp: z.preprocess(
     tomBlirUndefined,
-    z.enum(["privat_rum", "rum_eget_bad", "hel_lagenhet"]).optional()
+    z.enum(BOSTADSTYPER).optional()
   ),
   beskrivning: valfriText(5000),
   bilder: bildLista,
@@ -152,6 +153,12 @@ export const rumSchema = z.object({
     .positive("Månadshyran måste vara större än 0")
     .max(1_000_000),
   moblering: z.array(z.string().max(100)).max(50).optional(),
+  // Del av huset ("Övre våningen") — bostadssidan grupperar rummen på den
+  sektion: valfriText(100),
+  bostadstyp: z.preprocess(
+    tomBlirUndefined,
+    z.enum(BOSTADSTYPER, { error: "Ogiltig rumstyp" }).default(STANDARD_BOSTADSTYP)
+  ),
 });
 
 export const bokningPatchSchema = z

@@ -317,6 +317,15 @@ test("skräpdata ger 400 med tydligt fel, aldrig 500", async () => {
         }),
     },
     {
+      namn: "admin: rum med påhittad rumstyp",
+      gor: () =>
+        api("/api/rum", {
+          method: "POST",
+          headers: { cookie: adminCookie },
+          body: JSON.stringify({ bostad_id: bostadId, namn: "X", manadshyra: 4900, bostadstyp: "slott" }),
+        }),
+    },
+    {
       namn: "admin: bokning med påhittad status",
       gor: () =>
         api(`/api/bokningar/${crypto.randomUUID()}`, {
@@ -400,4 +409,39 @@ test("admin-endpoints nekar utan admin-session", async () => {
     const somHyresgast = await e.gor({ cookie: cookieA });
     assert.equal(somHyresgast.status, 403, `${e.namn} som hyresgast: förväntade 403, fick ${somHyresgast.status}`);
   }
+});
+
+// ─── 8. Rumstyp och del av huset sparas per rum ──────────────────────────────
+
+test("admin: rum sparar bostadstyp och sektion", async () => {
+  const res = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      bostad_id: bostadId,
+      namn: "Testrum med eget bad",
+      manadshyra: 4900,
+      bostadstyp: "rum_eget_bad",
+      sektion: "Nedre våningen",
+    }),
+  });
+  assert.equal(res.status, 201);
+  const body = await res.json();
+  assert.equal(body.bostadstyp, "rum_eget_bad", "API-svaret ska visa bostadstyp");
+  assert.equal(body.sektion, "Nedre våningen", "API-svaret ska visa sektion");
+
+  const iDb = await prisma.rum.findUnique({ where: { id: body.id } });
+  assert.equal(iDb?.bostadstyp, "rum_eget_bad", "bostadstyp ska sparas i databasen");
+  assert.equal(iDb?.sektion, "Nedre våningen", "sektion ska sparas i databasen");
+
+  // Utan fälten: standardtyp och ingen sektion
+  const utan = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({ bostad_id: bostadId, namn: "Testrum utan typ", manadshyra: 4900 }),
+  });
+  assert.equal(utan.status, 201);
+  const utanBody = await utan.json();
+  assert.equal(utanBody.bostadstyp, "privat_rum");
+  assert.equal(utanBody.sektion, null);
 });
