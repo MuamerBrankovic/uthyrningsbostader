@@ -11,8 +11,10 @@ import { BOSTADSTYPER, STANDARD_BOSTADSTYP } from "@/lib/bostadstyp";
 // Felmeddelandena visas direkt för användaren i formulären — håll dem svenska
 // och begripliga. Maxlängder skyddar databasen mot skräpdata.
 
-// Formulär skickar ofta tomma strängar för valfria fält — normalisera till undefined
-const tomBlirUndefined = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+// Formulär skickar tomma strängar eller null för valfria fält (dashboarden
+// skickar t.ex. kvm: null när fältet är tomt) — normalisera båda till undefined
+const tomBlirUndefined = (v: unknown) =>
+  v === null || (typeof v === "string" && v.trim() === "") ? undefined : v;
 
 function valfriText(max: number) {
   return z.preprocess(

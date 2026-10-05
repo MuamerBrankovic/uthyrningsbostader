@@ -445,3 +445,55 @@ test("admin: rum sparar bostadstyp och sektion", async () => {
   assert.equal(utanBody.bostadstyp, "privat_rum");
   assert.equal(utanBody.sektion, null);
 });
+
+// ─── 9. Tomma fält från dashboarden (null) godtas ────────────────────────────
+
+test("admin: dashboardens null för tomma fält ger 201, inte 400", async () => {
+  // Formulären i dashboarden skickar null för tomma valfria fält
+  // (t.ex. kvm: null). Det ska betyda "tomt", inte avvisas.
+  // Samma body som "Lägg upp rum" skickar när bara de obligatoriska fälten är ifyllda.
+  const rum = await api("/api/rum", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      bostad_id: bostadId,
+      namn: "Testrum med tomma fält",
+      sektion: null,
+      bostadstyp: "privat_rum",
+      beskrivning: null,
+      kvm: null,
+      manadshyra: 4900,
+      bilder: [],
+      moblering: [],
+    }),
+  });
+  const rumBody = await rum.json();
+  assert.equal(rum.status, 201, `rum: förväntade 201, fick ${rum.status}: ${rumBody.error ?? ""}`);
+  assert.equal(rumBody.kvm, null);
+  assert.equal(rumBody.beskrivning, null);
+  assert.equal(rumBody.sektion, null);
+  assert.equal(rumBody.bostadstyp, "privat_rum");
+
+  // Bostaden raderas direkt — testbostäder ska synas så kort tid som möjligt
+  const bostad = await api("/api/bostader", {
+    method: "POST",
+    headers: { cookie: adminCookie },
+    body: JSON.stringify({
+      namn: `[TEST] Tomma fält ${KOR}`,
+      adress: null,
+      stadsdel: null,
+      bostadstyp: "privat_rum",
+      beskrivning: null,
+      bilder: [],
+      delade_utrymmen: [],
+      inkluderat: [],
+      kontaktperson_namn: null,
+      kontaktperson_email: null,
+      kontaktperson_telefon: null,
+      kontaktperson_bild: null,
+    }),
+  });
+  const bostadBody = await bostad.json();
+  if (bostadBody.id) await prisma.bostad.delete({ where: { id: bostadBody.id } });
+  assert.equal(bostad.status, 201, `bostad: förväntade 201, fick ${bostad.status}: ${bostadBody.error ?? ""}`);
+});
