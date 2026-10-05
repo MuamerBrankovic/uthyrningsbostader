@@ -3,9 +3,18 @@ const { chromium } = require("playwright");
 const path = require("path");
 const fs = require("fs");
 
+// OBS: skriptet går mot den riktiga sajten. Det registrerar testkontot nedan
+// och skickar en bokningsförfrågan på första rummet — kör det inte mot
+// reloka.se när riktiga bostäder ligger uppe.
 const BASE = "https://reloka.se";
 const EMAIL = "testuser+vercel@example.com";
-const PASS  = "TestPass123";
+// Lösenordet läses från miljön och får aldrig stå i koden — repot är publikt.
+// Kör t.ex. i PowerShell:  $env:E2E_LOSENORD = "..."; node e2e-live.js
+const PASS = process.env.E2E_LOSENORD;
+if (!PASS) {
+  console.error("Sätt miljövariabeln E2E_LOSENORD (testkontots lösenord) innan skriptet körs.");
+  process.exit(1);
+}
 
 const DIR = path.join(__dirname, "e2e-live-screenshots");
 if (!fs.existsSync(DIR)) fs.mkdirSync(DIR);
