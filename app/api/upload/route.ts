@@ -1,14 +1,12 @@
 import { requireAdmin } from "@/lib/auth";
 import type { NextRequest } from "next/server";
-import sharp from "sharp";
+import { optimeraBild, nyttBildnamn } from "@/lib/bildbehandling";
 import { rapporteraFel } from "@/lib/sentry-rapportera";
 
 export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
-const MAX_WIDTH = 1920;
-const WEBP_QUALITY = 85;
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdmin();
@@ -37,19 +35,14 @@ export async function POST(request: NextRequest) {
   // Optimera: max 1920px bredd (förstora aldrig), konvertera till WebP q85
   let optimized: Buffer;
   try {
-    const inputBuffer = Buffer.from(await file.arrayBuffer());
-    optimized = await sharp(inputBuffer)
-      .rotate() // respektera EXIF-orientering
-      .resize({ width: MAX_WIDTH, withoutEnlargement: true })
-      .webp({ quality: WEBP_QUALITY })
-      .toBuffer();
+    optimized = await optimeraBild(Buffer.from(await file.arrayBuffer()));
   } catch (err) {
     console.error("[upload] sharp-fel:", err);
     rapporteraFel(err, "api.upload.bildbearbetning");
     return Response.json({ error: "Kunde inte bearbeta bilden" }, { status: 400 });
   }
 
-  const baseName = `${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+  const baseName = nyttBildnamn();
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
