@@ -497,3 +497,38 @@ test("admin: dashboardens null för tomma fält ger 201, inte 400", async () => 
   if (bostadBody.id) await prisma.bostad.delete({ where: { id: bostadBody.id } });
   assert.equal(bostad.status, 201, `bostad: förväntade 201, fick ${bostad.status}: ${bostadBody.error ?? ""}`);
 });
+
+// ─── 10. Rummen visas i skapandeordning ──────────────────────────────────────
+
+test("rummen listas i skapandeordning på både lista och bostadssida", async () => {
+  // Raderna sparas i omvänd ordning mot created_at, och namnen går i
+  // bokstavsordning åt fel håll — så varken lagringsordningen, namnet eller
+  // id:t kan råka ge rätt svar. Bara en sortering på created_at gör det.
+  const t0 = Date.now() - 60_000;
+  const ordning = await prisma.bostad.create({
+    data: {
+      namn: `[TEST] Ordning ${KOR}`,
+      rum: {
+        create: [
+          { namn: "A tredje", manadshyra: 4900, created_at: new Date(t0 + 2000) },
+          { namn: "B andra", manadshyra: 4900, created_at: new Date(t0 + 1000) },
+          { namn: "C först", manadshyra: 4900, created_at: new Date(t0) },
+        ],
+      },
+    },
+  });
+  const forvantat = ["C först", "B andra", "A tredje"];
+
+  try {
+    const lista = await api("/api/bostader").then((r) => r.json());
+    const iListan = lista.find((b) => b.id === ordning.id);
+    assert.ok(iListan, "testbostaden ska finnas i listan");
+    assert.deepEqual(iListan.rum.map((r) => r.namn), forvantat, "/api/bostader");
+
+    const detalj = await api(`/api/bostader/${ordning.id}`).then((r) => r.json());
+    assert.deepEqual(detalj.rum.map((r) => r.namn), forvantat, "/api/bostader/[id]");
+  } finally {
+    // Raderas direkt — testbostäder ska synas så kort tid som möjligt
+    await prisma.bostad.delete({ where: { id: ordning.id } });
+  }
+});
