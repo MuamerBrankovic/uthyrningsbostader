@@ -111,9 +111,11 @@ type UploadItem = {
 
 function BildUppladdning({
   onBilderChange,
+  onUppladdningChange,
   disabled,
 }: {
   onBilderChange: (urls: string[]) => void;
+  onUppladdningChange?: (uppladdar: boolean) => void;
   disabled: boolean;
 }) {
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -166,6 +168,13 @@ function BildUppladdning({
   }
 
   const uploading = items.some((i) => i.uploading);
+
+  // Formuläret låser sin spara-knapp medan bilder laddas upp. Sparas det mitt
+  // i en uppladdning hamnar de sista bilderna annars i inget rum.
+  useEffect(() => {
+    onUppladdningChange?.(uploading);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploading]);
 
   return (
     <div>
@@ -312,12 +321,18 @@ function LaggUppBostad() {
   const [kontaktEmail, setKontaktEmail] = useState("");
   const [kontaktTelefon, setKontaktTelefon] = useState("");
   const [kontaktBildUrls, setKontaktBildUrls] = useState<string[]>([]);
+  // Byts efter varje sparning så att bilduppladdningarna börjar om tomma —
+  // annars ligger förra bostadens bilder kvar och följer med nästa
+  const [bildNyckel, setBildNyckel] = useState(0);
+  const [bilderUppladdas, setBilderUppladdas] = useState(false);
+  const [kontaktbildUppladdas, setKontaktbildUppladdas] = useState(false);
+  const uppladdar = bilderUppladdas || kontaktbildUppladdas;
   const [sparad, setSparad] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState("");
 
   async function handleSubmit() {
-    if (!namn) return;
+    if (!namn || uppladdar) return;
     setLaddar(true);
     setFel("");
 
@@ -354,6 +369,7 @@ function LaggUppBostad() {
       setKontaktEmail("");
       setKontaktTelefon("");
       setKontaktBildUrls([]);
+      setBildNyckel((n) => n + 1);
       setTimeout(() => setSparad(false), 5000);
     } else {
       const data = await res.json();
@@ -362,7 +378,7 @@ function LaggUppBostad() {
     setLaddar(false);
   }
 
-  const submitDisabled = !namn || laddar;
+  const submitDisabled = !namn || laddar || uppladdar;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -480,7 +496,9 @@ function LaggUppBostad() {
 
       <div className="mb-8">
         <BildUppladdning
+          key={`bilder-${bildNyckel}`}
           onBilderChange={setBildUrls}
+          onUppladdningChange={setBilderUppladdas}
           disabled={laddar}
         />
       </div>
@@ -508,7 +526,12 @@ function LaggUppBostad() {
         </div>
         <div>
           <label className={LABEL_CLS}>Profilbild <span className="normal-case font-normal">(valfritt)</span></label>
-          <BildUppladdning onBilderChange={setKontaktBildUrls} disabled={laddar} />
+          <BildUppladdning
+            key={`kontaktbild-${bildNyckel}`}
+            onBilderChange={setKontaktBildUrls}
+            onUppladdningChange={setKontaktbildUppladdas}
+            disabled={laddar}
+          />
         </div>
       </div>
 
@@ -517,7 +540,7 @@ function LaggUppBostad() {
         disabled={submitDisabled}
         className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
-        {laddar ? "Sparar..." : "Lägg upp bostad"}
+        {laddar ? "Sparar..." : uppladdar ? "Väntar på bilder..." : "Lägg upp bostad"}
       </button>
     </div>
   );
@@ -537,6 +560,10 @@ function LaggUppRum() {
   const [manadshyra, setManadshyra] = useState("");
   const [moblering, setMoblering] = useState("");
   const [bildUrls, setBildUrls] = useState<string[]>([]);
+  // Byts efter varje sparning så att bilduppladdningen börjar om tom —
+  // annars följer förra rummets bilder med nästa rum
+  const [bildNyckel, setBildNyckel] = useState(0);
+  const [uppladdar, setUppladdar] = useState(false);
   const [sparad, setSparad] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState("");
@@ -552,7 +579,7 @@ function LaggUppRum() {
   }, []);
 
   async function handleSubmit() {
-    if (!bostadId || !namn || !manadshyra) return;
+    if (!bostadId || !namn || !manadshyra || uppladdar) return;
     setLaddar(true);
     setFel("");
 
@@ -588,6 +615,7 @@ function LaggUppRum() {
       setManadshyra("");
       setMoblering("");
       setBildUrls([]);
+      setBildNyckel((n) => n + 1);
       setTimeout(() => setSparad(false), 5000);
     } else {
       const data = await res.json();
@@ -781,17 +809,19 @@ function LaggUppRum() {
 
       <div className="mb-8">
         <BildUppladdning
+          key={bildNyckel}
           onBilderChange={setBildUrls}
+          onUppladdningChange={setUppladdar}
           disabled={laddar}
         />
       </div>
 
       <button
         onClick={handleSubmit}
-        disabled={!bostadId || !namn || !manadshyra || laddar}
+        disabled={!bostadId || !namn || !manadshyra || laddar || uppladdar}
         className="bg-[#2D7A4F] text-white text-sm px-8 py-3.5 rounded-xl hover:bg-[#225f3d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
-        {laddar ? "Sparar..." : "Lägg till rum"}
+        {laddar ? "Sparar..." : uppladdar ? "Väntar på bilder..." : "Lägg till rum"}
       </button>
     </div>
   );
