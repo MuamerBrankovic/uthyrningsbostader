@@ -532,3 +532,28 @@ test("rummen listas i skapandeordning på både lista och bostadssida", async ()
     await prisma.bostad.delete({ where: { id: ordning.id } });
   }
 });
+
+// ─── 11. Startsidans "från"-priser kommer ur databasen ───────────────────────
+
+test("startsidan visar lägsta månadshyran per rumstyp ur databasen", async () => {
+  // Facit räknas ur databasen, så testet gäller oavsett vilka rum som finns
+  const rader = await prisma.rum.groupBy({ by: ["bostadstyp"], _min: { manadshyra: true } });
+  const lagst = Object.fromEntries(rader.map((r) => [r.bostadstyp, r._min.manadshyra]));
+
+  const html = (await api("/").then((r) => r.text())).replace(/ |&nbsp;/g, " ");
+  const kort = {
+    privat_rum: "Privat rum",
+    rum_eget_bad: "Rum med eget bad",
+    hel_lagenhet: "Hel lägenhet",
+  };
+  for (const [typ, titel] of Object.entries(kort)) {
+    const forvantat = lagst[typ]
+      ? `från ${lagst[typ].toLocaleString("sv-SE").replace(/ /g, " ")} kr/mån`
+      : "Pris på förfrågan";
+    const efterTitel = html.slice(html.indexOf(`>${titel}</h3>`));
+    assert.ok(
+      efterTitel.slice(0, 300).includes(forvantat),
+      `${titel}: väntade "${forvantat}" på startsidan`
+    );
+  }
+});
