@@ -2,17 +2,27 @@
 //
 // Bevisar de kritiska säkerhets- och affärsreglerna mot en LOKAL dev-server.
 //
-// KÖRNING:
-//   1. Starta dev-servern i ett terminalfönster:  npm run dev
-//   2. Kör i ett annat:                           npm run test:api
+// Körs automatiskt i CI på varje pull request, mot en egen Postgres som är
+// helt skild från produktionen. Det är det vanliga sättet att köra den.
 //
-// Ingen konfiguration behövs utöver .env.local (DATABASE_URL läses därifrån).
+// KÖRNING LOKALT — kräver en lokal testdatabas, ALDRIG produktionens:
+//   1. Starta en lokal Postgres (samma som i CI), t.ex. med Docker:
+//        docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=reloka_test postgres:17
+//   2. I PowerShell, i projektmappen:
+//        $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/reloka_test"
+//        npx prisma migrate deploy
+//        npm run dev
+//   3. I ett annat fönster, med samma $env:DATABASE_URL:  npm run test:api
+//
+// Sviten vägrar köra om DATABASE_URL pekar någon annanstans än på den egna
+// datorn. .env innehåller produktionens adress, och tidigare körningar mot
+// den lade testbostäder synligt på reloka.se medan sviten pågick.
+//
 // Sviten är självstädande: den skapar egen testdata (bostad "[TEST] ...",
 // användare på @test.reloka.internal, en engångs-admin med slumpat lösenord)
 // och raderar allt efteråt — även kvarlämnat skräp från en kraschad körning.
-//
-// OBS: dev-servern kör mot samma databas som testerna städar i. Sviten rör
-// ENDAST rader den själv skapat (märkta enligt ovan).
+// Dev-servern måste använda samma databas: annars misslyckas inloggningen av
+// engångs-admin och inget test körs.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { test, before, after } = require("node:test");
@@ -21,6 +31,22 @@ const crypto = require("node:crypto");
 
 require("dotenv").config({ path: ".env.local", quiet: true });
 require("dotenv").config({ quiet: true });
+
+// Spärr: sviten skapar och raderar data och får bara köras mot en databas på
+// den egna datorn (som i CI) — aldrig mot produktionen på Neon.
+const DB_VARD = (() => {
+  try {
+    return new URL(process.env.DATABASE_URL).hostname;
+  } catch {
+    return "(saknas eller ogiltig)";
+  }
+})();
+if (!["localhost", "127.0.0.1", "[::1]"].includes(DB_VARD)) {
+  throw new Error(
+    `DATABASE_URL pekar på ${DB_VARD}. Testsviten körs bara mot en lokal ` +
+      "testdatabas (localhost) — se KÖRNING överst i tests/api.test.js."
+  );
+}
 
 const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("@prisma/client");
