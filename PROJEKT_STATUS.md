@@ -1,7 +1,7 @@
 # UthyrningsBostäder — Projektstatus
 
 ## Senast uppdaterad
-2026-10-05
+2026-10-06
 
 ## Tech Stack
 - Next.js 16 (App Router) — frontend och API-rutter
@@ -423,6 +423,45 @@ SMÅFIXAR:
 - Byt <<TELEFONNUMMER_HÄR>> i lib/kontakt.ts (två rader: visning + tel:-länk)
   [KLART 2026-07-06 — riktigt nummer inlagt]
 - Byt ORGNR_VISNING i lib/kontakt.ts när org.nr kommer från Bolagsverket
+
+## Dag 21
+
+### Tjädergatan 17 är publicerad — första riktiga bostaden
+Utfört i produktion 2026-10-05–06, i ordningen från Dag 20:
+
+- MIGRATIONEN: PR #2 mergades 2026-10-05 kl. 10:39, FÖRE migrationen.
+  Vercel deployade koden mot en databas utan de nya kolumnerna, och
+  /api/bostader, bostadssidan och rumssidorna gav 500 i ungefär sex minuter.
+  `npx prisma migrate deploy` kördes 10:45:53 och allt svarade 200 igen.
+  LÄRDOM: en PR som kräver migration får inte mergas förrän migrationen är
+  körd. Kör migrationen först, eller skriv det överst i PR:en.
+- BACKUP: Neon-branchen backup-2026-10-05 skapades före rensningen.
+- RENSNING (2026-10-06, med exakta id:n): testbostaden "Tjädergatan 17" med
+  4 rum och 12 bokningar, 13 testkonton och 7 offertförfrågningar.
+  Testbostadens 2 bilder och 2 kontrakts-PDF:er raderades i Blob, som
+  därefter var tom. Kvar finns ett konto: Muamers adminkonto.
+- IMPORT: `node scripts/importera-tjadergatan.mts <mapp> --skarpt` skapade
+  bostaden (id feab2236-e186-4752-b547-2dc151029d1d) med 9 rum i tre
+  sektioner och laddade upp 27 bilder, varje fil en gång. Torrkörningen
+  först var ren.
+- KONTROLL av reloka.se med Playwright i dator- och mobilvy: 56 av 58
+  kontroller gröna. Kortet, filtren, bostadssidan, alla nio rumssidor och
+  bildordningen stämmer, Nedre · Rum 3 visar platshållaren och de gamla
+  testbilderna ger 404. Startsidan visar "från 4 900 kr/mån" för alla tre
+  typerna. De två röda gäller sitemap.xml, som byggdes vid den tidiga
+  deployen och listade testbostaden. Den rättas vid nästa deploy.
+
+ÖPPET: Nedre rum1.jpg visar ett tomt rum, men texterna säger "nio möblerade
+rum". Texterna är som i specen tills Muamer bestämt.
+
+### Testsviten kan inte längre köras mot produktionen
+tests/api.test.js vägrar starta om DATABASE_URL inte pekar på den egna
+datorn (localhost). .env innehåller produktionens adress, och tidigare
+körningar lade testbostäder synligt på reloka.se medan sviten pågick. CI
+påverkas inte, eftersom den kör mot en egen Postgres på localhost.
+Instruktion för lokal körning med Docker finns överst i testfilen.
+Kontrollerat: spärren stoppar produktionens adress, en extern adress och en
+ogiltig adress, och sviten är 11/11 grön mot en lokal databas.
 
 ## Dag 20
 
